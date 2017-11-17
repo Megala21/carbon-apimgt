@@ -2721,7 +2721,21 @@ public class APIUtilTest {
         Mockito.doNothing().
                 when(registryAuthorizationManager)
                 .authorizeRole(APIConstants.ANONYMOUS_ROLE, resourcePath, ActionConstants.GET);
+        Mockito.doNothing().
+                when(registryAuthorizationManager)
+                .denyRole(Mockito.anyString(), Mockito.anyString(), Mockito.anyString());
 
+        PowerMockito.mockStatic(ServiceReferenceHolder.class);
+        ServiceReferenceHolder serviceReferenceHolder = Mockito.mock(ServiceReferenceHolder.class);
+
+        PowerMockito.doReturn(serviceReferenceHolder).when(ServiceReferenceHolder.class, "getInstance");
+        RealmService realmService = Mockito.mock(RealmService.class);
+        Mockito.doReturn(realmService).when(serviceReferenceHolder).getRealmService();
+        UserRealm userRealm = Mockito.mock(UserRealm.class);
+        Mockito.doReturn(userRealm).when(realmService).getTenantUserRealm(Mockito.anyInt());
+        RealmConfiguration realmConfiguration = Mockito.mock(RealmConfiguration.class);
+        Mockito.doReturn(realmConfiguration).when(userRealm).getRealmConfiguration();
+        Mockito.doReturn("admin").when(realmConfiguration).getAdminUserName();
         APIUtil.setResourcePermissions(username, visibility, roles, artifactPath);
         roles = new String[] { "test4" };
         APIUtil.setResourcePermissions(username, visibility, roles, artifactPath);
@@ -2740,8 +2754,8 @@ public class APIUtilTest {
 
         PowerMockito.mockStatic(MultitenantUtils.class);
         Mockito.when(MultitenantUtils.getTenantDomain(Mockito.anyString())).thenReturn(tenantDomain);
-        ServiceReferenceHolder serviceReferenceHolder = Mockito.mock(ServiceReferenceHolder.class);
-        RealmService realmService = Mockito.mock(RealmService.class);
+        serviceReferenceHolder = Mockito.mock(ServiceReferenceHolder.class);
+        realmService = Mockito.mock(RealmService.class);
         TenantManager tenantManager = Mockito.mock(TenantManager.class);
         PowerMockito.mockStatic(ServiceReferenceHolder.class);
         Mockito.when(ServiceReferenceHolder.getInstance()).thenReturn(serviceReferenceHolder);
@@ -2751,10 +2765,8 @@ public class APIUtilTest {
 
         org.wso2.carbon.user.api.AuthorizationManager authorizationManager = Mockito
                 .mock(org.wso2.carbon.user.api.AuthorizationManager.class);
-        UserRealm userRealm = Mockito.mock(UserRealm.class);
         Mockito.when(realmService.getTenantUserRealm(1)).thenReturn(userRealm);
         Mockito.when(userRealm.getAuthorizationManager()).thenReturn(authorizationManager);
-
         Mockito.doNothing().
                 when(authorizationManager).authorizeRole("test3", resourcePath, ActionConstants.GET);
         Mockito.doNothing().

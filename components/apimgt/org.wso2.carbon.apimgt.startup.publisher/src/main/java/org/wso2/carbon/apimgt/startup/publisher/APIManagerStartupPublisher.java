@@ -378,13 +378,41 @@ public class APIManagerStartupPublisher implements ServerStartupHandler {
 			// to gain performance
 			String apiStatus = api.getStatus().getStatus();
 			saveAPIStatus(artifactPath, apiStatus);
+
+			Resource resource = registry.get(artifactPath);
+			String publisherRoles = api.getWadlUrl();
+			if (publisherRoles == null) {
+				publisherRoles = "null";
+			}
+			String storeRoles = api.getVisibility().equalsIgnoreCase("public") ? "null" : api.getVisibleRoles();
+			if (storeRoles == null) {
+				storeRoles = "null";
+			}
+			publisherRoles = publisherRoles.replaceAll("//s+", "").toLowerCase();
+			storeRoles = storeRoles.replaceAll("//s+", "").toLowerCase();
+			if (resource != null) {
+				String propValue = resource.getProperty(APIConstants.PUBLISHER_ROLES_PROPERTY);
+				if (propValue == null) {
+					resource.addProperty(APIConstants.PUBLISHER_ROLES_PROPERTY, publisherRoles);
+				} else {
+					resource.setProperty(APIConstants.PUBLISHER_ROLES_PROPERTY, publisherRoles);
+				}
+
+				propValue = resource.getProperty(APIConstants.STORE_ROLES_PROPERTY);
+				if (propValue == null) {
+					resource.addProperty(APIConstants.STORE_ROLES_PROPERTY, storeRoles);
+				} else {
+					resource.setProperty(APIConstants.STORE_ROLES_PROPERTY, storeRoles);
+				}
+				registry.put(artifactPath,resource);
+			}
 			String visibleRolesList = api.getVisibleRoles();
 			String[] visibleRoles = new String[0];
 			if (visibleRolesList != null) {
 				visibleRoles = visibleRolesList.split(",");
 			}
-			APIUtil.setResourcePermissions(api.getId().getProviderName(),
-					api.getVisibility(), visibleRoles, artifactPath);
+			APIUtil.setResourcePermissions(api.getId().getProviderName(), api.getVisibility(), visibleRoles,
+					artifactPath, api.getWadlUrl());
 			registry.commitTransaction();
 
 			// Generate API Definition for Swagger. 
@@ -433,10 +461,10 @@ public class APIManagerStartupPublisher implements ServerStartupHandler {
 			if (visibleRolesList != null) {
 				visibleRoles = visibleRolesList.split(",");
 			}
-            
-            APIUtil.setResourcePermissions(apiId.getProviderName(), 
-            		api.getVisibility(), visibleRoles, artifact.getPath());
-            
+
+	        APIUtil.setResourcePermissions(apiId.getProviderName(), api.getVisibility(), visibleRoles,
+			        artifact.getPath(), api.getWadlUrl());
+
         } catch (RegistryException e) {
             handleException("Failed to add documentation", e);
         } 

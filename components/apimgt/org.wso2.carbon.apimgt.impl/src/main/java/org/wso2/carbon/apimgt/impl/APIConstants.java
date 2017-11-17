@@ -768,6 +768,8 @@ public final class APIConstants {
     public static final String EVERYONE_ROLE = "internal/everyone";
     public static final String ANONYMOUS_ROLE = "system/wso2.anonymous.role";
     public static final String SUBSCRIBER_ROLE = "Internal/subscriber";
+    public static final String CREATOR_ROLE = "Internal/creator";
+    public static final String PUBLISHER_ROLE = "Internal/publisher";
 
     // Anonymous end user, to be used with ACCESS_TOKEN_USER_TYPE_APPLICATION
     public static final String END_USER_ANONYMOUS = "anonymous";
@@ -1304,5 +1306,8 @@ public final class APIConstants {
 
     public static final String JSON_GRANT_TYPES = "grant_types";
     public static final String JSON_USERNAME = "username";
+
+    public static final String PUBLISHER_ROLES_PROPERTY = "registry.publisher_roles";
+    public static final String STORE_ROLES_PROPERTY = "registry.store_roles";
 
 }

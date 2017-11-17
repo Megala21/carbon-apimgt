@@ -202,4 +202,13 @@ public interface KeyManager {
      */
     AccessTokenInfo getAccessTokenByConsumerKey(String consumerKey) throws APIManagementException;
 
+    /**
+     * To get the user role list.
+     *
+     * @param userName Name of the user to get the role list
+     * @return the relevant role list of the user.
+     * @throws APIManagementException API Management Exception.
+     */
+    String[] getUserRoleList(String userName) throws APIManagementException;
+
 }

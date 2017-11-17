@@ -38,6 +38,7 @@ import org.wso2.carbon.apimgt.impl.utils.APIUtil;
 import org.wso2.carbon.registry.api.Registry;
 import org.wso2.carbon.registry.api.RegistryException;
 import org.wso2.carbon.registry.api.Resource;
+import org.wso2.carbon.registry.core.ResourcePath;
 
 import java.nio.charset.Charset;
 import java.util.Date;
@@ -202,7 +203,17 @@ public class APIDefinitionFromSwagger20 extends APIDefinition {
             registry.put(resourcePath, resource);
 
             //Need to set anonymous if the visibility is public
-            APIUtil.setResourcePermissions(apiProviderName, null, null, resourcePath);
+            APIUtil.setResourcePermissions(apiProviderName, null, null, resourcePath, api.getWadlUrl());
+
+            String resourcePath1 = APIUtil.getAPIPath(new APIIdentifier(apiProviderName, apiName, apiVersion));
+            String visibilityRoles = api.getVisibleRoles();
+            String[] roles = null;
+
+            if (visibilityRoles != null) {
+                roles = visibilityRoles.replace("\\s+", "").split(",");
+            }
+            APIUtil.setResourcePermissions(apiProviderName, api.getVisibility(), roles, resourcePath1, api.getWadlUrl
+                    ());
 
         } catch (RegistryException e) {
             handleException("Error while adding Swagger Definition for " + apiName + '-' + apiVersion, e);

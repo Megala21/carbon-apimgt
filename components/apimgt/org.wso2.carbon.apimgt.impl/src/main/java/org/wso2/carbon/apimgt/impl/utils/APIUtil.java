@@ -187,21 +187,8 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Set;
-import java.util.SortedSet;
-import java.util.TreeMap;
-import java.util.TreeSet;
 import java.util.concurrent.TimeUnit;
 import javax.cache.Cache;
 import javax.cache.CacheConfiguration;
@@ -215,6 +202,8 @@ import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
+
+import static org.wso2.carbon.apimgt.impl.APIConstants.ANONYMOUS_ROLE;
 
 /**
  * This class contains the utility methods used by the implementations of APIManager, APIProvider
@@ -659,6 +648,7 @@ public final class APIUtil {
             api.setDescription(artifact.getAttribute(APIConstants.API_OVERVIEW_DESCRIPTION));
             api.setResponseCache(artifact.getAttribute(APIConstants.API_OVERVIEW_RESPONSE_CACHING));
             api.setType(artifact.getAttribute(APIConstants.API_OVERVIEW_TYPE));
+            api.setWadlUrl(artifact.getAttribute(APIConstants.API_OVERVIEW_WADL));
             int cacheTimeout = APIConstants.API_RESPONSE_CACHE_TIMEOUT;
             try {
                 cacheTimeout = Integer.parseInt(artifact.getAttribute(APIConstants.API_OVERVIEW_CACHE_TIMEOUT));
@@ -1372,7 +1362,8 @@ public final class APIUtil {
                 if (api.getVisibleRoles() != null) {
                     visibleRoles = api.getVisibleRoles().split(",");
                 }
-                setResourcePermissions(api.getId().getProviderName(), api.getVisibility(), visibleRoles, wsdlResourcePath);
+                setResourcePermissions(api.getId().getProviderName(), api.getVisibility(), visibleRoles,
+                        wsdlResourcePath, api.getWadlUrl());
             } else {
                 byte[] wsdl = (byte[]) registry.get(wsdlResourcePath).getContent();
                 if (isWSDL2Resource(wsdl)) {
@@ -1389,7 +1380,8 @@ public final class APIUtil {
                 if (api.getVisibleRoles() != null) {
                     visibleRoles = api.getVisibleRoles().split(",");
                 }
-                setResourcePermissions(api.getId().getProviderName(), api.getVisibility(), visibleRoles, wsdlResourcePath);
+                setResourcePermissions(api.getId().getProviderName(), api.getVisibility(), visibleRoles,
+                        wsdlResourcePath, api.getWadlUrl());
             }
 
             //set the wsdl resource permlink as the wsdlURL.
@@ -2707,6 +2699,15 @@ public final class APIUtil {
      */
     public static void setResourcePermissions(String username, String visibility, String[] roles, String artifactPath)
             throws APIManagementException {
+        setResourcePermissions(username, visibility, roles, artifactPath, null);
+    }
+
+    public static void setResourcePermissions(String username, String visibility, String[] roles, String
+            artifactPath, String publisherRoles) throws APIManagementException {
+        String[] publisherAccessControlRoles = null;
+        if (publisherRoles != null) {
+            publisherAccessControlRoles = publisherRoles.replace("//s+", "").split(",");
+        }
         try {
             String resourcePath = RegistryUtils.getAbsolutePath(RegistryContext.getBaseInstance(),
                     APIUtil.getMountedPath(RegistryContext.getBaseInstance(),
@@ -2717,6 +2718,7 @@ public final class APIUtil {
             if (!org.wso2.carbon.utils.multitenancy.MultitenantConstants.SUPER_TENANT_DOMAIN_NAME.equals(tenantDomain)) {
                 int tenantId = ServiceReferenceHolder.getInstance().getRealmService().
                         getTenantManager().getTenantId(tenantDomain);
+
                 // calculate resource path
                 RegistryAuthorizationManager authorizationManager = new RegistryAuthorizationManager
                         (ServiceReferenceHolder.getUserRealm());
@@ -2724,6 +2726,8 @@ public final class APIUtil {
                 org.wso2.carbon.user.api.AuthorizationManager authManager =
                         ServiceReferenceHolder.getInstance().getRealmService().
                                 getTenantUserRealm(tenantId).getAuthorizationManager();
+
+                denyCurrentAvailableRoles(resourcePath, authManager, tenantId);
                 if (visibility != null && APIConstants.API_RESTRICTED_VISIBILITY.equalsIgnoreCase(visibility)) {
                     boolean isRoleEveryOne = false;
                     /*If no roles have defined, authorize for everyone role */
@@ -2741,32 +2745,54 @@ public final class APIUtil {
                             }
                         }
                     }
-                    if (!isRoleEveryOne) {
+                    if (isRoleEveryOne) {
+                        authManager.authorizeRole(APIConstants.EVERYONE_ROLE, resourcePath, ActionConstants.GET);
+                    } else {
                         authManager.denyRole(APIConstants.EVERYONE_ROLE, resourcePath, ActionConstants.GET);
                     }
-                    authManager.denyRole(APIConstants.ANONYMOUS_ROLE, resourcePath, ActionConstants.GET);
+                    authManager.denyRole(ANONYMOUS_ROLE, resourcePath, ActionConstants.GET);
+
+                    if (publisherAccessControlRoles != null && publisherAccessControlRoles.length > 0) {
+                        for (String role : publisherAccessControlRoles) {
+                            authorizeRoleToResourcePath(authManager, role, resourcePath);
+                        }
+                        denyRoleForResource(authManager, APIConstants.EVERYONE_ROLE, resourcePath);
+                    } else {
+                        authorizeRoleToResourcePath(authManager, APIConstants.PUBLISHER_ROLE, resourcePath);
+                        authorizeRoleToResourcePath(authManager, APIConstants.CREATOR_ROLE, resourcePath);
+                    }
                 } else if (visibility != null && APIConstants.API_PRIVATE_VISIBILITY.equalsIgnoreCase(visibility)) {
                     authManager.authorizeRole(APIConstants.EVERYONE_ROLE, resourcePath, ActionConstants.GET);
-                    authManager.denyRole(APIConstants.ANONYMOUS_ROLE, resourcePath, ActionConstants.GET);
+                    authManager.denyRole(ANONYMOUS_ROLE, resourcePath, ActionConstants.GET);
                 } else if (visibility != null && APIConstants.DOC_OWNER_VISIBILITY.equalsIgnoreCase(visibility)) {
 
                     /*If no roles have defined, deny access for everyone & anonymous role */
                     if (roles == null) {
                         authManager.denyRole(APIConstants.EVERYONE_ROLE, resourcePath, ActionConstants.GET);
-                        authManager.denyRole(APIConstants.ANONYMOUS_ROLE, resourcePath, ActionConstants.GET);
+                        authManager.denyRole(ANONYMOUS_ROLE, resourcePath, ActionConstants.GET);
                     } else {
                         for (String role : roles) {
                             authManager.denyRole(role, resourcePath, ActionConstants.GET);
 
                         }
                     }
-                } else {
-                    authManager.authorizeRole(APIConstants.EVERYONE_ROLE, resourcePath, ActionConstants.GET);
-                    authManager.authorizeRole(APIConstants.ANONYMOUS_ROLE, resourcePath, ActionConstants.GET);
+                }  else {
+                    authManager.authorizeRole(ANONYMOUS_ROLE, resourcePath, ActionConstants.GET);
+                    if (publisherAccessControlRoles != null && publisherAccessControlRoles.length > 0) {
+                        for (String role : publisherAccessControlRoles) {
+                            authorizeRoleToResourcePath(authManager, role, resourcePath);
+                        }
+                        authManager.authorizeRole(APIConstants.SUBSCRIBER_ROLE, resourcePath, ActionConstants.GET);
+                    } else {
+                        authManager.authorizeRole(APIConstants.EVERYONE_ROLE, resourcePath, ActionConstants.GET);
+                        authorizeRoleToResourcePath(authManager, APIConstants.PUBLISHER_ROLE, resourcePath);
+                        authorizeRoleToResourcePath(authManager, APIConstants.CREATOR_ROLE, resourcePath);
+                    }
                 }
             } else {
                 RegistryAuthorizationManager authorizationManager = new RegistryAuthorizationManager
                         (ServiceReferenceHolder.getUserRealm());
+                denyCurrentAvailableRoles(resourcePath, authorizationManager, MultitenantConstants.SUPER_TENANT_ID);
 
                 if (visibility != null && APIConstants.API_RESTRICTED_VISIBILITY.equalsIgnoreCase(visibility)) {
                     boolean isRoleEveryOne = false;
@@ -2781,26 +2807,47 @@ public final class APIUtil {
                     }
                     if (!isRoleEveryOne) {
                         authorizationManager.denyRole(APIConstants.EVERYONE_ROLE, resourcePath, ActionConstants.GET);
+                    } else {
+                        authorizationManager.authorizeRole(APIConstants.EVERYONE_ROLE, resourcePath, ActionConstants.GET);
                     }
-                    authorizationManager.denyRole(APIConstants.ANONYMOUS_ROLE, resourcePath, ActionConstants.GET);
+                    authorizationManager.denyRole(ANONYMOUS_ROLE, resourcePath, ActionConstants.GET);
+
+                    if (publisherAccessControlRoles != null && publisherAccessControlRoles.length > 0) {
+                        for (String role : publisherAccessControlRoles) {
+                            authorizeRoleToResourcePath(authorizationManager, role, resourcePath);
+                        }
+                        denyRoleForResource(authorizationManager, APIConstants.EVERYONE_ROLE, resourcePath);
+                    } else {
+                        authorizeRoleToResourcePath(authorizationManager, APIConstants.PUBLISHER_ROLE, resourcePath);
+                        authorizeRoleToResourcePath(authorizationManager, APIConstants.CREATOR_ROLE, resourcePath);
+                    }
 
                 } else if (visibility != null && APIConstants.API_PRIVATE_VISIBILITY.equalsIgnoreCase(visibility)) {
                     authorizationManager.authorizeRole(APIConstants.EVERYONE_ROLE, resourcePath, ActionConstants.GET);
-                    authorizationManager.denyRole(APIConstants.ANONYMOUS_ROLE, resourcePath, ActionConstants.GET);
+                    authorizationManager.denyRole(ANONYMOUS_ROLE, resourcePath, ActionConstants.GET);
                 } else if (visibility != null && APIConstants.DOC_OWNER_VISIBILITY.equalsIgnoreCase(visibility)) {
                      /*If no roles have defined, deny access for everyone & anonymous role */
                     if (roles == null) {
                         authorizationManager.denyRole(APIConstants.EVERYONE_ROLE, resourcePath, ActionConstants.GET);
-                        authorizationManager.denyRole(APIConstants.ANONYMOUS_ROLE, resourcePath, ActionConstants.GET);
+                        authorizationManager.denyRole(ANONYMOUS_ROLE, resourcePath, ActionConstants.GET);
                     } else {
                         for (String role : roles) {
                             authorizationManager.denyRole(role, resourcePath, ActionConstants.GET);
-
                         }
                     }
                 } else {
-                    authorizationManager.authorizeRole(APIConstants.EVERYONE_ROLE, resourcePath, ActionConstants.GET);
-                    authorizationManager.authorizeRole(APIConstants.ANONYMOUS_ROLE, resourcePath, ActionConstants.GET);
+                    authorizationManager.authorizeRole(ANONYMOUS_ROLE, resourcePath, ActionConstants.GET);
+
+                    if (publisherAccessControlRoles != null && publisherAccessControlRoles.length > 0) {
+                        for (String role : publisherAccessControlRoles) {
+                            authorizeRoleToResourcePath(authorizationManager, role, resourcePath);
+                        }
+                        authorizationManager.authorizeRole(APIConstants.SUBSCRIBER_ROLE, resourcePath, ActionConstants.GET);
+                    } else {
+                        authorizationManager.authorizeRole(APIConstants.EVERYONE_ROLE, resourcePath, ActionConstants.GET);
+                        authorizeRoleToResourcePath(authorizationManager, APIConstants.PUBLISHER_ROLE, resourcePath);
+                        authorizeRoleToResourcePath(authorizationManager, APIConstants.CREATOR_ROLE, resourcePath);
+                    }
                 }
             }
 
@@ -2808,6 +2855,67 @@ public final class APIUtil {
         } catch (UserStoreException e) {
             throw new APIManagementException("Error while adding role permissions to API", e);
         }
+    }
+
+    /**
+     * To deny all the currently available roles for a particular resource.
+     */
+    private static void denyCurrentAvailableRoles(String resourcePath,
+            org.wso2.carbon.user.api.AuthorizationManager authManager, int tenantId) throws UserStoreException {
+        String[] currentRoleArr = authManager.getAllowedRolesForResource(resourcePath, ActionConstants.GET);
+        List<String> currentRoleList = new LinkedList<String>();
+
+        if (currentRoleArr != null) {
+            currentRoleList = new LinkedList<String>(Arrays.asList(currentRoleArr));
+        }
+
+        String adminRoleName = ServiceReferenceHolder.getInstance().getRealmService().getTenantUserRealm(tenantId)
+                .getRealmConfiguration().getAdminRoleName();
+
+        currentRoleList.remove(adminRoleName);
+        currentRoleList.remove(ANONYMOUS_ROLE);
+
+        String[] roleToRemoveArr = currentRoleList.toArray(new String[currentRoleList.size()]);
+
+        if (log.isDebugEnabled()) {
+            log.debug("Roles going to deny permissions : " + roleToRemoveArr.toString());
+        }
+
+        for (String roleToRemove : roleToRemoveArr) {
+            if (authManager.isRoleAuthorized(roleToRemove, resourcePath, ActionConstants.GET)) {
+                denyRoleForResource(authManager, roleToRemove, resourcePath);
+            }
+        }
+    }
+
+    /**
+     * To authorize a particular role for resource path.
+     *
+     * @param authManager  Authorization Manager
+     * @param roleToAdd    Role to authorize
+     * @param resourcePath Path of the resource.
+     * @throws UserStoreException UserStore Exception.
+     */
+    private static void authorizeRoleToResourcePath(org.wso2.carbon.user.api.AuthorizationManager authManager,
+            String roleToAdd, String resourcePath) throws UserStoreException {
+        authManager.authorizeRole(roleToAdd, resourcePath, ActionConstants.GET);
+        authManager.authorizeRole(roleToAdd, resourcePath, ActionConstants.PUT);
+        authManager.authorizeRole(roleToAdd, resourcePath, ActionConstants.DELETE);
+    }
+
+    /**
+     * To deny the roles for super-tenant.
+     *
+     * @param authManager  Authorization Manager to deny the role.
+     * @param roleName     Name of the role to deny the access for.
+     * @param resourcePath Path of the resource.
+     * @throws UserStoreException UserStore Exception.
+     */
+    private static void denyRoleForResource(org.wso2.carbon.user.api.AuthorizationManager authManager,
+            String roleName, String resourcePath) throws UserStoreException {
+        authManager.denyRole(roleName, resourcePath, ActionConstants.GET);
+        authManager.denyRole(roleName, resourcePath, ActionConstants.PUT);
+        authManager.denyRole(roleName, resourcePath, ActionConstants.DELETE);
     }
 
     public static void loadTenantAPIPolicy(String tenant, int tenantID) throws APIManagementException {
@@ -3387,7 +3495,7 @@ public final class APIUtil {
 
                 if (registry.resourceExists(govRelativePath)) {
                     // set anonymous user permission to RXTs
-                    authManager.authorizeRole(APIConstants.ANONYMOUS_ROLE, resourcePath, ActionConstants.GET);
+                    authManager.authorizeRole(ANONYMOUS_ROLE, resourcePath, ActionConstants.GET);
                     continue;
                 }
 
@@ -3398,7 +3506,7 @@ public final class APIUtil {
                 registry.put(govRelativePath, resource);
 
 
-                authManager.authorizeRole(APIConstants.ANONYMOUS_ROLE, resourcePath, ActionConstants.GET);
+                authManager.authorizeRole(ANONYMOUS_ROLE, resourcePath, ActionConstants.GET);
 
             } catch (UserStoreException e) {
                 throw new APIManagementException("Error while adding role permissions to API", e);
@@ -4637,7 +4745,7 @@ public final class APIUtil {
                             APIUtil.getMountedPath(RegistryContext.getBaseInstance(),
                                     RegistryConstants.GOVERNANCE_REGISTRY_BASE_PATH) + documentationPath);
                     if (CarbonConstants.REGISTRY_ANONNYMOUS_USERNAME.equalsIgnoreCase(username)) {
-                        isAuthorized = manager.isRoleAuthorized(APIConstants.ANONYMOUS_ROLE, path, ActionConstants.GET);
+                        isAuthorized = manager.isRoleAuthorized(ANONYMOUS_ROLE, path, ActionConstants.GET);
                     } else {
                         isAuthorized = manager.isUserAuthorized(username, path, ActionConstants.GET);
                     }
@@ -4659,7 +4767,7 @@ public final class APIUtil {
                                     APIUtil.getMountedPath(RegistryContext.getBaseInstance(),
                                             RegistryConstants.GOVERNANCE_REGISTRY_BASE_PATH) + apiPath);
                             if (CarbonConstants.REGISTRY_ANONNYMOUS_USERNAME.equalsIgnoreCase(username)) {
-                                isAuthorized = manager.isRoleAuthorized(APIConstants.ANONYMOUS_ROLE, path, ActionConstants.GET);
+                                isAuthorized = manager.isRoleAuthorized(ANONYMOUS_ROLE, path, ActionConstants.GET);
                             } else {
                                 isAuthorized = manager.isUserAuthorized(username, path, ActionConstants.GET);
                             }
@@ -6600,5 +6708,22 @@ public final class APIUtil {
                         modifiedExp)).
                 setExpiry(CacheConfiguration.ExpiryType.ACCESSED, new CacheConfiguration.Duration(TimeUnit.SECONDS,
                         accessExp)).setStoreByValue(false).build();
+    }
+
+    static String escapeQueryChars(String s) {
+        StringBuilder sb = new StringBuilder();
+
+        for (int i = 0; i < s.length(); ++i) {
+            char c = s.charAt(i);
+            if (c == '\\' || c == '+' || c == '-' || c == '!' || c == '(' || c == ')' || c == ':' || c == '^'
+                    || c == '[' || c == ']' || c == '"' || c == '{' || c == '}' || c == '~' || c == '*' || c == '?'
+                    || c == '|' || c == '&' || c == ';' || c == '/' || Character.isWhitespace(c)) {
+                sb.append('\\');
+            }
+
+            sb.append(c);
+        }
+
+        return sb.toString();
     }
 }

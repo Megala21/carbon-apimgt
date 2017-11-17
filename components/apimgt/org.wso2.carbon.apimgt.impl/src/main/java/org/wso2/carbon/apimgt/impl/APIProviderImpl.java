@@ -32,6 +32,7 @@ import org.apache.axis2.util.JavaUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.solr.client.solrj.util.ClientUtils;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
@@ -76,6 +77,7 @@ import org.wso2.carbon.apimgt.impl.dto.ThrottleProperties;
 import org.wso2.carbon.apimgt.impl.dto.TierPermissionDTO;
 import org.wso2.carbon.apimgt.impl.dto.WorkflowDTO;
 import org.wso2.carbon.apimgt.impl.dto.WorkflowProperties;
+import org.wso2.carbon.apimgt.impl.factory.KeyManagerHolder;
 import org.wso2.carbon.apimgt.impl.internal.ServiceReferenceHolder;
 import org.wso2.carbon.apimgt.impl.notification.NotificationDTO;
 import org.wso2.carbon.apimgt.impl.notification.NotificationExecutor;
@@ -136,20 +138,7 @@ import java.io.File;
 import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.rmi.RemoteException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
-import java.util.SortedSet;
-import java.util.StringTokenizer;
-import java.util.TreeSet;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -863,7 +852,9 @@ class APIProviderImpl extends AbstractAPIManager implements APIProvider {
                 boolean updatePermissions = false;
                 if(!oldApi.getVisibility().equals(api.getVisibility()) ||
                    (APIConstants.API_RESTRICTED_VISIBILITY.equals(oldApi.getVisibility()) &&
-                    !api.getVisibleRoles().equals(oldApi.getVisibleRoles()))){
+                    !api.getVisibleRoles().equals(oldApi.getVisibleRoles())) || ((oldApi.getWadlUrl() != null &&
+                        oldApi.getWadlUrl().equals(api.getWadlUrl())) || (oldApi.getWadlUrl() == null && api
+                        .getWadlUrl() != null))){
                     updatePermissions = true;
                 }
                 updateApiArtifact(api, true,updatePermissions);
@@ -1112,6 +1103,36 @@ class APIProviderImpl extends AbstractAPIManager implements APIProvider {
             //to gain performance
             String apiStatus = api.getStatus().getStatus();
             saveAPIStatus(artifactPath, apiStatus);
+
+
+            Resource resource = registry.get(artifactPath);
+            String publisherRoles = api.getWadlUrl();
+            if (publisherRoles == null) {
+                publisherRoles = "null";
+            }
+            String storeRoles = api.getVisibility().equalsIgnoreCase("public") ? "null" : api.getVisibleRoles();
+            if (storeRoles == null) {
+                storeRoles = "null";
+            }
+            publisherRoles = publisherRoles.replaceAll("//s+", "").toLowerCase();
+            storeRoles = storeRoles.replaceAll("//s+", "").toLowerCase();
+            if (resource != null) {
+                String propValue = resource.getProperty(APIConstants.PUBLISHER_ROLES_PROPERTY);
+                if (propValue == null) {
+                    resource.addProperty(APIConstants.PUBLISHER_ROLES_PROPERTY, publisherRoles);
+                } else {
+                    resource.setProperty(APIConstants.PUBLISHER_ROLES_PROPERTY, publisherRoles);
+                }
+
+                propValue = resource.getProperty(APIConstants.STORE_ROLES_PROPERTY);
+                if (propValue == null) {
+                    resource.addProperty(APIConstants.STORE_ROLES_PROPERTY, storeRoles);
+                } else {
+                    resource.setProperty(APIConstants.STORE_ROLES_PROPERTY, storeRoles);
+                }
+                registry.put(artifactPath,resource);
+            }
+
             String[] visibleRoles = new String[0];
             if (updatePermissions) {
                 clearResourcePermissions(artifactPath, api.getId());
@@ -1121,7 +1142,7 @@ class APIProviderImpl extends AbstractAPIManager implements APIProvider {
                     visibleRoles = visibleRolesList.split(",");
                 }
                 APIUtil.setResourcePermissions(api.getId().getProviderName(), api.getVisibility(), visibleRoles,
-                                               artifactPath);
+                        artifactPath, api.getWadlUrl());
             }
             registry.commitTransaction();
             transactionCommitted = true;
@@ -1139,24 +1160,24 @@ class APIProviderImpl extends AbstractAPIManager implements APIProvider {
                         if ((APIConstants.DOC_API_BASED_VISIBILITY).equalsIgnoreCase(doc.getVisibility().name())) {
                             String documentationPath = APIUtil.getAPIDocPath(api.getId()) + doc.getName();
                             APIUtil.setResourcePermissions(api.getId().getProviderName(), api.getVisibility(),
-                                                           visibleRoles, documentationPath);
+                                                           visibleRoles, documentationPath, api.getWadlUrl());
                             if (Documentation.DocumentSourceType.INLINE.equals(doc.getSourceType())) {
 
                                 String contentPath = APIUtil.getAPIDocContentPath(api.getId(), doc.getName());
                                 APIUtil.setResourcePermissions(api.getId().getProviderName(), api.getVisibility(),
-                                                               visibleRoles, contentPath);
+                                                               visibleRoles, contentPath, api.getWadlUrl());
                             } else if (Documentation.DocumentSourceType.FILE.equals(doc.getSourceType()) &&
                                        doc.getFilePath() != null) {
                                 String filePath = APIUtil.getDocumentationFilePath(api.getId(), doc.getFilePath()
                                         .split("files" + RegistryConstants.PATH_SEPARATOR)[1]);
                                 APIUtil.setResourcePermissions(api.getId().getProviderName(), api.getVisibility(),
-                                                               visibleRoles, filePath);
+                                                               visibleRoles, filePath, api.getWadlUrl());
                             }
                         }
                     }
                 } else {
                     APIUtil.setResourcePermissions(api.getId().getProviderName(), api.getVisibility(), visibleRoles,
-                                                   docRootPath);
+                                                   docRootPath, api.getWadlUrl());
                 }
             }
         } catch (Exception e) {
@@ -1764,7 +1785,7 @@ class APIProviderImpl extends AbstractAPIManager implements APIProvider {
                     visibleRoles = visibleRolesList.split(",");
                 }
                 APIUtil.setResourcePermissions(api.getId().getProviderName(), api.getVisibility(), visibleRoles,
-                        filePath);
+                        filePath, api.getWadlUrl());
                 documentation.setFilePath(addResourceFile(filePath, icon));
                 APIUtil.setFilePermission(filePath);
             } catch (APIManagementException e) {
@@ -1922,7 +1943,8 @@ class APIProviderImpl extends AbstractAPIManager implements APIProvider {
                 rolesSet = roles.split(",");
             }
             APIUtil.setResourcePermissions(api.getId().getProviderName(),
-            		artifact.getAttribute(APIConstants.API_OVERVIEW_VISIBILITY), rolesSet, artifactPath);
+                    artifact.getAttribute(APIConstants.API_OVERVIEW_VISIBILITY), rolesSet, artifactPath,
+                    api.getWadlUrl());
             //Here we have to set permission specifically to image icon we added
             String iconPath = artifact.getAttribute(APIConstants.API_OVERVIEW_THUMBNAIL_URL);
             if (iconPath != null && iconPath.lastIndexOf("/apimgt") != -1) {
@@ -2255,7 +2277,8 @@ class APIProviderImpl extends AbstractAPIManager implements APIProvider {
                 }
             }
 
-            APIUtil.setResourcePermissions(api.getId().getProviderName(),visibility, authorizedRoles,contentPath);
+            APIUtil.setResourcePermissions(api.getId().getProviderName(), visibility, authorizedRoles, contentPath,
+                    api.getWadlUrl());
 
             JSONObject apiLogObject = new JSONObject();
             apiLogObject.put(APIConstants.AuditLogConstants.NAME, api.getId().getApiName());
@@ -2327,7 +2350,7 @@ class APIProviderImpl extends AbstractAPIManager implements APIProvider {
             clearResourcePermissions(docPath, apiId);
 
             APIUtil.setResourcePermissions(api.getId().getProviderName(), visibility, authorizedRoles,
-                                           artifact.getPath());
+                                           artifact.getPath(), api.getWadlUrl());
 
             String docFilePath = artifact.getAttribute(APIConstants.DOC_FILE_PATH);
             if (docFilePath != null && !"".equals(docFilePath)) {
@@ -2338,7 +2361,8 @@ class APIProviderImpl extends AbstractAPIManager implements APIProvider {
                 // to set permissions.
                 int startIndex = docFilePath.indexOf("governance") + "governance".length();
                 String filePath = docFilePath.substring(startIndex, docFilePath.length());
-                APIUtil.setResourcePermissions(api.getId().getProviderName(), visibility, authorizedRoles, filePath);
+                APIUtil.setResourcePermissions(api.getId().getProviderName(), visibility, authorizedRoles, filePath,
+                        api.getWadlUrl());
             }
 
             JSONObject apiLogObject = new JSONObject();
@@ -2428,13 +2452,41 @@ class APIProviderImpl extends AbstractAPIManager implements APIProvider {
             //to gain performance
             String apiStatus = api.getStatus().getStatus();
             saveAPIStatus(artifactPath, apiStatus);
+
+            Resource resource = registry.get(artifactPath);
+            String publisherRoles = api.getWadlUrl();
+            if (publisherRoles == null) {
+                publisherRoles = "null";
+            }
+            String storeRoles = api.getVisibility().equalsIgnoreCase("public") ? "null" : api.getVisibleRoles();
+            if (storeRoles == null) {
+                storeRoles = "null";
+            }
+            publisherRoles = publisherRoles.replaceAll("//s+", "").toLowerCase();
+            storeRoles = storeRoles.replaceAll("//s+", "").toLowerCase();
+            if (resource != null) {
+                String propValue = resource.getProperty(APIConstants.PUBLISHER_ROLES_PROPERTY);
+                if (propValue == null) {
+                    resource.addProperty(APIConstants.PUBLISHER_ROLES_PROPERTY, publisherRoles);
+                } else {
+                    resource.setProperty(APIConstants.PUBLISHER_ROLES_PROPERTY, publisherRoles);
+                }
+
+                propValue = resource.getProperty(APIConstants.STORE_ROLES_PROPERTY);
+                if (propValue == null) {
+                    resource.addProperty(APIConstants.STORE_ROLES_PROPERTY, storeRoles);
+                } else {
+                    resource.setProperty(APIConstants.STORE_ROLES_PROPERTY, storeRoles);
+                }
+                registry.put(artifactPath,resource);
+            }
             String visibleRolesList = api.getVisibleRoles();
             String[] visibleRoles = new String[0];
             if (visibleRolesList != null) {
                 visibleRoles = visibleRolesList.split(",");
             }
             APIUtil.setResourcePermissions(api.getId().getProviderName(), api.getVisibility(), visibleRoles,
-                    artifactPath);
+                    artifactPath, api.getWadlUrl());
             registry.commitTransaction();
             transactionCommitted = true;
 
@@ -2520,14 +2572,16 @@ class APIProviderImpl extends AbstractAPIManager implements APIProvider {
                     visibility = APIConstants.DOC_OWNER_VISIBILITY;
                 }
             }
-            APIUtil.setResourcePermissions(api.getId().getProviderName(),visibility, authorizedRoles, artifact.getPath());
+            APIUtil.setResourcePermissions(api.getId().getProviderName(),visibility, authorizedRoles, artifact
+                    .getPath(), api.getWadlUrl());
             String docFilePath = artifact.getAttribute(APIConstants.DOC_FILE_PATH);
             if (docFilePath != null && !"".equals(docFilePath)) {
                 //The docFilePatch comes as /t/tenanatdoman/registry/resource/_system/governance/apimgt/applicationdata..
                 //We need to remove the /t/tenanatdoman/registry/resource/_system/governance section to set permissions.
                 int startIndex = docFilePath.indexOf("governance") + "governance".length();
                 String filePath = docFilePath.substring(startIndex, docFilePath.length());
-                APIUtil.setResourcePermissions(api.getId().getProviderName(),visibility, authorizedRoles, filePath);
+                APIUtil.setResourcePermissions(api.getId().getProviderName(),visibility, authorizedRoles, filePath,
+                        api.getWadlUrl());
                 registry.addAssociation(artifact.getPath(), filePath,APIConstants.DOCUMENTATION_FILE_ASSOCIATION);
             }
             documentation.setId(artifact.getId());
@@ -4333,9 +4387,27 @@ class APIProviderImpl extends AbstractAPIManager implements APIProvider {
             Map<String, List<String>> listMap = new HashMap<String, List<String>>();
 
             if (artifactManager != null) {
-                GenericArtifact[] genericArtifacts = artifactManager.findGenericArtifacts(listMap);
+                String[] userRoles = KeyManagerHolder.getKeyManagerInstance().getUserRoleList(username);
+                StringBuilder rolesQuery = new StringBuilder();
+                rolesQuery.append('(');
+                rolesQuery.append("null");
+                if (userRoles != null) {
+                    for (String userRole : userRoles) {
+                        rolesQuery.append(" OR ");
+                        rolesQuery.append(ClientUtils.escapeQueryChars(userRole.toLowerCase()));
+                    }
+                }
+                rolesQuery.append(")");
+                String criteria = APIConstants.PUBLISHER_ROLES_PROPERTY + "=" + rolesQuery.toString();
+
+//                List<String> rules = new ArrayList<String>();
+//                rules.add("*");
+//                listMap.put(APIConstants.PUBLISHER_ROLES_PROPERTY, rules);
+                List<GovernanceArtifact> genericArtifacts = GovernanceUtils
+                        .findGovernanceArtifacts(criteria, userRegistry, APIConstants.API_RXT_MEDIA_TYPE);
+
                 totalLength = PaginationContext.getInstance().getLength();
-                if (genericArtifacts == null || genericArtifacts.length == 0) {
+                if (genericArtifacts == null || genericArtifacts.size() == 0) {
                     result.put("apis", apiSortedList);
                     result.put("totalLength", totalLength);
                     return result;
@@ -4346,11 +4418,11 @@ class APIProviderImpl extends AbstractAPIManager implements APIProvider {
                     --totalLength; // Remove the additional 1 we added earlier when setting max pagination limit
                 }
                 int tempLength = 0;
-                for (GenericArtifact artifact : genericArtifacts) {
+                for (GovernanceArtifact artifact : genericArtifacts) {
 
                     API api = APIUtil.getAPI(artifact);
 
-                    if (api != null) {
+                    if (api != null && isUserAllowedToViewAPI(api, api.getWadlUrl())) {
                         apiSortedList.add(api);
                     }
                     tempLength++;
@@ -5064,4 +5136,22 @@ class APIProviderImpl extends AbstractAPIManager implements APIProvider {
     protected ThrottlePolicyTemplateBuilder getThrottlePolicyTemplateBuilder() {
         return new ThrottlePolicyTemplateBuilder();
     }
+
+    @Override
+    public List<API> getAllAPIs() throws APIManagementException {
+        List<API> apis = super.getAllAPIs();
+
+        if (apis != null && apis.size() > 0) {
+            List<API> filteredAPIs = new ArrayList<API>();
+            for (API api : apis) {
+                if (isUserAllowedToViewAPI(api, api.getWadlUrl())) {
+                    filteredAPIs.add(api);
+                }
+            }
+            return  filteredAPIs;
+        } else {
+            return  apis;
+        }
+    }
+
 }

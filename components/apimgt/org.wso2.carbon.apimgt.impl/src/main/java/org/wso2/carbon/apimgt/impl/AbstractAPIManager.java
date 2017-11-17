@@ -54,6 +54,7 @@ import org.wso2.carbon.apimgt.api.model.policy.Policy;
 import org.wso2.carbon.apimgt.api.model.policy.PolicyConstants;
 import org.wso2.carbon.apimgt.impl.dao.ApiMgtDAO;
 import org.wso2.carbon.apimgt.impl.definitions.APIDefinitionFromSwagger20;
+import org.wso2.carbon.apimgt.impl.factory.KeyManagerHolder;
 import org.wso2.carbon.apimgt.impl.internal.ServiceReferenceHolder;
 import org.wso2.carbon.apimgt.impl.utils.APINameComparator;
 import org.wso2.carbon.apimgt.impl.utils.APIUtil;
@@ -86,16 +87,7 @@ import org.wso2.carbon.utils.multitenancy.MultitenantUtils;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.SortedSet;
-import java.util.TreeSet;
+import java.util.*;
 import javax.xml.namespace.QName;
 import javax.xml.stream.XMLStreamException;
 
@@ -2380,5 +2372,37 @@ public abstract class AbstractAPIManager implements APIManager {
         return null;
 
     }
+
+
+    /**
+     * Checking whether this particular API has visibility restriction and publisher access-control restriction, if
+     * there are both restrictions checking whether this user has at-least one of the roles in the given role set
+     *
+     * @param api   API to check whether user is allowed to view the API.
+     * @param roles Roles to check against.
+     * @return true if the user is allowed, otherwise false.
+     * @throws APIManagementException API Management Exception.
+     */
+    boolean isUserAllowedToViewAPI(API api, String roles) throws APIManagementException {
+        if (!CarbonConstants.REGISTRY_ANONNYMOUS_USERNAME.equals(username) && api.getVisibleRoles() != null
+                && api.getWadlUrl() != null && roles != null) {
+            String[] userRoleList = KeyManagerHolder.getKeyManagerInstance().getUserRoleList(username);
+
+            if (userRoleList != null && userRoleList.length > 0) {
+                List<String> roleList = new ArrayList<String>(
+                        Arrays.asList(roles.replaceAll("\\s+", "").split(",")));
+                roleList.retainAll(new ArrayList<String>(Arrays.asList(userRoleList)));
+                if (roleList.isEmpty()) {
+                    return false;
+                }
+            } else {
+                return false;
+            }
+        }
+        return true;
+    }
+
+
+
 
 }

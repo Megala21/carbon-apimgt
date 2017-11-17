@@ -21,6 +21,7 @@ package org.wso2.carbon.apimgt.impl;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.solr.client.solrj.util.ClientUtils;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
@@ -616,12 +617,25 @@ class APIConsumerImpl extends AbstractAPIManager implements APIConsumer {
             }
 
             PaginationContext.init(start, end, "ASC", APIConstants.API_OVERVIEW_NAME, maxPaginationLimit);
-            
-            
             criteria = criteria + APIUtil.getORBasedSearchCriteria(apiStatus);
             GenericArtifactManager artifactManager = APIUtil.getArtifactManager(userRegistry, APIConstants.API_KEY);
             if (artifactManager != null) {
+                if (!CarbonConstants.REGISTRY_ANONNYMOUS_USERNAME.equals(username)) {
+                    String[] userRoles = KeyManagerHolder.getKeyManagerInstance().getUserRoleList(username);
+                    StringBuilder rolesQuery = new StringBuilder();
+                    rolesQuery.append('(');
+                    rolesQuery.append("null");
+                    if (userRoles != null) {
+                        for (String userRole : userRoles) {
+                            rolesQuery.append(" OR ");
+                            rolesQuery.append(ClientUtils.escapeQueryChars(userRole.toLowerCase()));
+                        }
+                    }
+                    rolesQuery.append(")");
+                    criteria += "&" + APIConstants.STORE_ROLES_PROPERTY + "=" + rolesQuery.toString();
+                }
                 if (apiStatus != null && apiStatus.length > 0) {
+
                     List<GovernanceArtifact> genericArtifacts = GovernanceUtils.findGovernanceArtifacts(criteria, userRegistry,
                             APIConstants.API_RXT_MEDIA_TYPE);
                     totalLength = PaginationContext.getInstance().getLength();

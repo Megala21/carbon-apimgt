@@ -204,7 +204,7 @@ public class APIDefinitionFromSwagger12 extends APIDefinition {
             registry.put(resourcePath, resource);
 
             //Set visibility as same as the API visibility
-            APIUtil.setResourcePermissions(apiProviderName, api.getVisibility(), null, resourcePath);
+            APIUtil.setResourcePermissions(apiProviderName, api.getVisibility(), null, resourcePath, api.getWadlUrl());
 
         } catch (RegistryException e) {
             handleException("Error while adding Swagger Definition for " + apiName + "-" + apiVersion, e);
