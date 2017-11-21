@@ -889,6 +889,15 @@ public class APIProviderHostObject extends ScriptableObject {
             visibleRoles = (String) apiData.get("visibleRoles", apiData);
         }
 
+        String publisherAccessControl = (String) apiData.get("accessControl", apiData);
+        String publisherAccessControlRoles = "";
+        if (publisherAccessControl != null && publisherAccessControl.equals(APIConstants.API_RESTRICTED_VISIBILITY)) {
+            publisherAccessControlRoles = (String) apiData.get("accessControlRoles", apiData);
+            if (publisherAccessControlRoles != null) {
+                publisherAccessControlRoles = publisherAccessControlRoles.toLowerCase().trim();
+            }
+        }
+
         if (provider != null) {
             provider = APIUtil.replaceEmailDomain(provider);
         }
@@ -947,6 +956,9 @@ public class APIProviderHostObject extends ScriptableObject {
         api.setVisibility(visibility);
         api.setVisibleRoles(visibleRoles != null ? visibleRoles.trim() : null);
         api.setLastUpdated(new Date());
+        api.setAccessControlRoles(publisherAccessControlRoles);
+        api.setAccessControl(publisherAccessControl);
+        api.setAccessControlRoles(publisherAccessControlRoles);
 
 
         return saveAPI(apiProvider, api, fileHostObject, false);
@@ -1013,6 +1025,7 @@ public class APIProviderHostObject extends ScriptableObject {
         api.setContext(context);
         api.setVisibility(APIConstants.API_GLOBAL_VISIBILITY);
         api.setLastUpdated(new Date());
+        api.setAccessControl(APIConstants.NO_ACCESS_CONTROL);
 
         return saveAPI(apiProvider, api, null, true);
     }
@@ -1166,6 +1179,8 @@ public class APIProviderHostObject extends ScriptableObject {
         String thumbUrl = (String) apiData.get("thumbUrl", apiData);
         String environments = (String) apiData.get("environments", apiData);
         String visibleRoles = "";
+        String publisherAccessControl = (String) apiData.get("accessControl", apiData);
+        String publisherAccessControlRoles = "";
 
         if (name != null) {
             name = name.trim();
@@ -1183,6 +1198,10 @@ public class APIProviderHostObject extends ScriptableObject {
 
         if (visibility != null && visibility.equals(APIConstants.API_RESTRICTED_VISIBILITY)) {
             visibleRoles = (String) apiData.get("visibleRoles", apiData);
+        }
+
+        if (publisherAccessControl != null && publisherAccessControl.equals(APIConstants.API_RESTRICTED_VISIBILITY)) {
+            publisherAccessControlRoles = (String) apiData.get("accessControlRoles", apiData);
         }
 
         if (sandboxUrl != null && sandboxUrl.trim().length() == 0) {
@@ -1525,6 +1544,8 @@ public class APIProviderHostObject extends ScriptableObject {
         api.setTechnicalOwnerEmail(techOwnerEmail);
         api.setVisibility(visibility);
         api.setVisibleRoles(visibleRoles != null ? visibleRoles.trim() : null);
+        api.setAccessControl(publisherAccessControl);
+        api.setAccessControlRoles(publisherAccessControlRoles);
         api.setEnvironments(APIUtil.extractEnvironmentsForAPI(environments));
         CORSConfiguration corsConfiguration = APIUtil.getCorsConfigurationDtoFromJson(corsConfiguraion);
         if (corsConfiguration != null) {
@@ -1726,12 +1747,17 @@ public class APIProviderHostObject extends ScriptableObject {
         String bizOwner = (String) apiData.get("bizOwner", apiData);
         String bizOwnerEmail = (String) apiData.get("bizOwnerEmail", apiData);
         String visibility = (String) apiData.get("visibility", apiData);
+        String publisherAccessControl = (String) apiData.get("accessControl", apiData);
         String thumbUrl = (String) apiData.get("thumbUrl", apiData);
         String environments = (String) apiData.get("environments", apiData);
         String corsConfiguraion = (String) apiData.get("corsConfiguration", apiData);
         String visibleRoles = "";
+        String publisherAccessControlRoles = "";
         if (visibility != null && visibility.equals(APIConstants.API_RESTRICTED_VISIBILITY)) {
             visibleRoles = (String) apiData.get("visibleRoles", apiData);
+        }
+        if (publisherAccessControl != null && publisherAccessControl.equals(APIConstants.API_RESTRICTED_VISIBILITY)) {
+            publisherAccessControlRoles = (String) apiData.get("accessControlRoles", apiData);
         }
 
         String visibleTenants = "";
@@ -1978,6 +2004,8 @@ public class APIProviderHostObject extends ScriptableObject {
         api.setVisibility(visibility);
         api.setVisibleRoles(visibleRoles != null ? visibleRoles.trim() : null);
         api.setVisibleTenants(visibleTenants != null ? visibleTenants.trim() : null);
+        api.setAccessControl(publisherAccessControl);
+        api.setAccessControlRoles(publisherAccessControlRoles);
         Set<Tier> availableTier = new HashSet<Tier>();
         if (tier != null) {
             String[] tierNames = tier.split(",");
@@ -2533,7 +2561,6 @@ public class APIProviderHostObject extends ScriptableObject {
      * @return a native array
      * @throws APIManagementException Wrapped exception by org.wso2.carbon.apimgt.api.APIManagementException
      */
-
     public static NativeArray jsFunction_getAPI(Context cx, Scriptable thisObj,
                                                 Object[] args,
                                                 Function funObj) throws APIManagementException {
@@ -2741,6 +2768,8 @@ public class APIProviderHostObject extends ScriptableObject {
                 myn.put(50, myn, checkValue(policiesSet.toString()));
                 myn.put(51, myn, checkValue(api.getApiLevelPolicy()));
                 myn.put(52, myn, checkValue(api.getType()));
+                myn.put(53, myn, checkValue((api.getAccessControl())));
+                myn.put(54, myn, checkValue((api.getAccessControlRoles())));
             } else {
                 handleException("Cannot find the requested API- " + apiName +
                         "-" + version);
@@ -4469,6 +4498,56 @@ public class APIProviderHostObject extends ScriptableObject {
         }
 
         return valid;
+    }
+
+
+    public static String jsFunction_validateUserRoles(Context cx, Scriptable thisObj, Object[] args, Function funObj) {
+        if (args == null || args.length == 0) {
+            return "No input was provided";
+        }
+
+        boolean valid = false;
+        String inputRolesSet = (String) args[0];
+        String username = (String) args[1];
+        String[] inputRoles = null;
+        if (inputRolesSet != null) {
+            inputRoles = inputRolesSet.split(",");
+        }
+
+        try {
+            String[] userRoleList = KeyManagerHolder.getKeyManagerInstance().getUserRoleList(username);
+            String[] roles = APIUtil.getRoleNames(username);
+
+            if (inputRoles != null) {
+            List<String> roleList = Arrays.asList(inputRoles);
+            List<String> userRoles = Arrays.asList(userRoleList);
+            roleList.retainAll(userRoles);
+            if (roleList.isEmpty()) {
+                return "The current user does not have any of these roles."
+            }
+            }
+            if (roles != null && inputRoles != null) {
+                for (String inputRole : inputRoles) {
+                    for (String role : roles) {
+                        valid = (inputRole.equals(role));
+                        if (valid) { //If we found a match for the input role,then no need to process the for loop
+                            // further
+                            break;
+                        }
+                    }
+                    //If the input role doesn't match with any of the role existing in the system
+                    if (!valid) {
+                        return "Invalid role/roles provided";
+                    }
+
+                }
+                return "valid";
+            }
+        } catch (Exception e) {
+            log.error("Error while validating the input roles.", e);
+        }
+
+        return "in-valid";
     }
 
     /**

@@ -169,6 +169,62 @@
 														<input type="hidden" name="context" value="<%= encode.forHtml(api.context) %>" />
 											<% } %>
 
+                                            <div class="form-group">
+												<label class="col-sm-3  control-label" for="access-control">
+												<%=i18n.localize("Access Control")%>:
+												<a class="help_popup" help_data="control_help" data-trigger="hover"
+												data-placement="bottom" title="control_help">
+													<span class="icon fw-stack fw-lg" style="font-size:6px">
+														   <i class="fw fw-circle fw-stack-2x"></i>
+														   <i class="fw fw-question fw-stack-1x fw-inverse" style="font-size:8px"></i>
+													</span>
+												</a>
+												<p id="control_help" class="hide"><%=i18n.localize("<strong>Public :</strong> The API is accessible to everyone and can be advertised in multiple stores - a central store and/or non-WSO2 stores.<br/><strong>Restricted by roles :</strong> The API is visible only to specific user roles in the tenant store that you specify.")%></p></label>
+												<div class="col-sm-4">
+													<select class="select required form-control" id="access-control"
+													name="access-control">
+                                                    <% if (api) {%>
+														<option value="none" <%if(api.accessControl="none"){%> selected="selected" <%}%>>
+														        <%=i18n.localize("Public")%>
+                                                        </option>
+                                                        <option value="restricted" <%if(api.accessControl=="restricted") {%>
+                                                            selected="selected" <%}%>>
+                                                            <%=i18n.localize("Restricted by roles")%>
+                                                        </option>
+                                                    <% } else {%>
+														<option value="none"><%=i18n.localize("Public")%></option>
+									                    <option value="restricted"><%=i18n.localize("Restricted by roles")%></option>
+													<%}%>
+												</select>
+												</div>
+											</div>
+
+											<%if(api) { %>
+												<div class="form-group" id="publisherRolesDiv"
+												<%if(api.accessControl!="restricted"){%>style="display: none;"<%}%>>
+														<label class="col-sm-3 control-label" for="publisherRoles"
+														id="publisherRolesLabel" name="publisherRolesLabel">
+															<%=i18n.localize("Visible to Roles")%>:<span class="requiredAstrix">*</span>
+														</label>
+														<div class="col-sm-9">
+															<input type="text" class="form-control required validInput validateRoles"
+															id="publisherRoles" name="publisherRoles"  value="<%=api.publisherRoles%>"
+															placeholder="<%=i18n.localize("Comma-separated list (e.g.: role1,role2,role3)")%>"/>
+														</div>
+													</div>
+											<%} else {%>
+												<div class="form-group" id="publisherRolesDiv" style="display: none;">
+													<label class="col-sm-3 control-label" for="publisheroles"
+													id="publisherRolesLabel" name="publisherRolesLabel">
+														<%=i18n.localize("Visible to Roles")%>:<span class="requiredAstrix">*</span>
+													</label>
+													<div class="col-sm-9">
+														<input type="text" class="form-control required validInput validateRoles"
+														id="publisherRoles" name="publisherRoles" placeholder="<%=i18n.localize("Comma-separated list (e.g.: role1,role2,role3)")%>"/>
+													</div>
+												</div>
+											 <%}%>
+
 											<div class="form-group">
 												<label class="col-sm-3  control-label" for="visibility"><%=i18n.localize("Visibility")%>:
 												<a class="help_popup" help_data="role_help" data-trigger="hover" data-placement="bottom" title="role_help">
@@ -410,6 +466,8 @@
                     }
                 });
             }
+
+
         <% } %>
         if (isEnjoyHintEnabled()) {
             var isWorldBankApiExist = localStorage.getItem("worldBankApiExist");
@@ -703,6 +761,19 @@
         });
 
         $('#visibility').trigger('change');
+
+         $('#access-control').change(function(){
+            var accessControl = $('#access-control').find(":selected").val();
+            if (accessControl === "none"){
+                $('#publisherRolesDiv').hide();
+            } else{
+                $('#publisherRolesDiv').show();
+            }
+        });
+
+        $('#access-control').trigger('change');
+
+
 
         $('#go_to_implement').click(function(e){
             $("body").unbind("api_saved");            

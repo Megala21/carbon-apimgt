@@ -164,6 +164,35 @@ var faultSequencesLoaded = false;
                 </div>
             <!--Response Caching End -->
 
+               <div class="control-group">
+               <label class="control-label" for="access-control"><%=i18n.localize("Access-Control")%>:<span
+               class="requiredAstrix">*</span></label>
+               <div class="controls">
+                   <select class="select required" id="access-control" name="access-control"
+                   onchange="showHidePublisherAccessControlRoles()">
+                       <option value="none" <%if(api.accessControl!="restricted"){%> selected="selected" <%}%>>
+                       <%=i18n.localize("Public")%></option>
+                       <option value="restricted" <%if(api.accessControl=="restricted"){%> selected="selected"
+                       <%}%>><%=i18n.localize("Restricted by roles")%></option>
+                   </select>
+                   <a class="icon-question-sign help_popup" help_data="publisherrole_help" title="publisherrole_help"></a>
+                   <p id="publisherrole_help" class="hide">
+                   <%=i18n.localize("<strong>Public :</strong> The API is accessible to everyone and can be advertised in multiple stores - a central store and/or non-WSO2 stores.<br/><strong>Restricted by roles :</strong> The API is visible only to specific user roles in the tenant store that you specify.")%></p>
+               </div>
+           </div>
+
+           <div class="control-group" id="publisherRolesDiv" <%if(api.accessControl!="restricted"){%>style="display: none;
+           "<%}%>>
+                <label class="control-label" for="publisherRoles" id="publisherRolesLabel" name="publisherRolesLabel">
+                    <%=i18n.localize("Visible to Roles")%>:<span class="requiredAstrix">*</span>
+                </label>
+                <div class="controls">
+                    <input type="text" class="input required validInput validateRoles"
+                    id="publisherRoles" name="publisherRoles"  value="<%=api.publisherRoles%>"/>
+                    <p class="help-block" id="rolesHelp"><%=i18n.localize("Comma-separated list (e.g.: role1,role2,role3)")%></p>
+                </div>
+            </div>
+
             <div class="control-group">
                <label class="control-label" for="visibility"><%=i18n.localize("Visibility")%>:<span
                class="requiredAstrix">*</span></label>

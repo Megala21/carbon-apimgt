@@ -19,6 +19,7 @@
 package org.wso2.carbon.apimgt.impl;
 
 import org.apache.axiom.om.OMElement;
+import org.apache.axis2.AxisFault;
 import org.apache.oltu.oauth2.common.OAuth;
 import org.apache.axis2.util.URL;
 import org.apache.commons.logging.Log;
@@ -41,6 +42,8 @@ import org.wso2.carbon.apimgt.impl.internal.ServiceReferenceHolder;
 import org.wso2.carbon.apimgt.impl.utils.APIUtil;
 import org.wso2.carbon.apimgt.keymgt.client.SubscriberKeyMgtClient;
 import org.wso2.carbon.apimgt.keymgt.client.SubscriberKeyMgtClientPool;
+import org.wso2.carbon.apimgt.keymgt.stub.useradmin.APIKeyMgtException;
+import org.wso2.carbon.apimgt.keymgt.stub.useradmin.MultiTenantUserAdminServiceStub;
 import org.wso2.carbon.identity.core.util.IdentityCoreConstants;
 import org.wso2.carbon.identity.oauth.common.OAuthConstants;
 import org.wso2.carbon.identity.oauth2.OAuth2TokenValidationService;
@@ -48,11 +51,13 @@ import org.wso2.carbon.identity.oauth2.dto.OAuth2ClientApplicationDTO;
 import org.wso2.carbon.identity.oauth2.dto.OAuth2TokenValidationRequestDTO;
 import org.wso2.carbon.identity.oauth2.dto.OAuth2TokenValidationResponseDTO;
 import org.wso2.carbon.identity.core.util.IdentityConfigParser;
+import org.wso2.carbon.utils.CarbonUtils;
 
 import javax.xml.namespace.QName;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.rmi.RemoteException;
 import java.util.*;
 
 /**
@@ -68,6 +73,7 @@ public class AMDefaultKeyManagerImpl extends AbstractKeyManager {
     private static final String CONFIG_ELEM_OAUTH = "OAuth";
 
     private KeyManagerConfiguration configuration;
+    private MultiTenantUserAdminServiceStub multiTenantUserAdminServiceStub;
 
     private static final Log log = LogFactory.getLog(AMDefaultKeyManagerImpl.class);
 
@@ -547,7 +553,24 @@ public class AMDefaultKeyManagerImpl extends AbstractKeyManager {
         }
 
         SubscriberKeyMgtClientPool.getInstance().setConfiguration(this.configuration);
+        try {
+            initializeMultiTenantUserAdminStub();
+        } catch (AxisFault axisFault) {
+            log.error("Error while initializing multiTenantUserTenantAdminStub", axisFault);
+        }
+    }
 
+    /**
+     * To initialize the multi-tenant user admin stub, which is useful for getting the roles of users.
+     */
+    private void initializeMultiTenantUserAdminStub() throws AxisFault {
+        String keyManagerUrl = configuration.getParameter("ServerURL");
+        String username = configuration.getParameter("Username");
+        String password = configuration.getParameter("Password");
+        multiTenantUserAdminServiceStub = new MultiTenantUserAdminServiceStub(null,
+                keyManagerUrl + APIConstants.MULTI_TENANT_USER_ADMIN_SERVICE);
+        CarbonUtils.setBasicAccessSecurityHeaders(username, password, true,
+                multiTenantUserAdminServiceStub._getServiceClient());
     }
 
     private QName getQNameWithIdentityNS(String localPart) {
@@ -592,6 +615,29 @@ public class AMDefaultKeyManagerImpl extends AbstractKeyManager {
 
     @Override
     public AccessTokenInfo getAccessTokenByConsumerKey(String consumerKey) throws APIManagementException {
+        return null;
+    }
+
+    @Override
+    public String[] getUserRoleList(String userName) throws APIManagementException{
+        AxisFault axisFault = null;
+        if (multiTenantUserAdminServiceStub == null) {
+            try {
+                initializeMultiTenantUserAdminStub();
+            } catch (AxisFault axisFault1) {
+                handleException("AxisFault while trying to connect to KeyManager to check the roles " + "of the user "
+                        + userName, axisFault);
+            }
+        }
+        try {
+            return multiTenantUserAdminServiceStub.getUserRoleList(userName);
+        } catch (RemoteException e) {
+            handleException("RemoteException while trying to get the role list of the user '" + userName + "' from "
+                    + "KeyManager", e);
+        } catch (APIKeyMgtException e) {
+            handleException("APIKeyMgtException while trying to get the role list of the user '" + userName + "' from "
+                    + "KeyManager", e);
+        }
         return null;
     }
 

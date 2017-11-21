@@ -2219,9 +2219,9 @@ public abstract class AbstractAPIManager implements APIManager {
 
 
     /**
-     * Returns API Search result based on the provided query. This search method supports '&' based concatenate 
-     * search in multiple fields. 
-     * 
+     * Returns API Search result based on the provided query. This search method supports '&' based concatenate
+     * search in multiple fields.
+     *
      * @param registry
      * @param searchQuery Ex: provider=*admin*&version=*1*
      * @return API result

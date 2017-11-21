@@ -114,6 +114,9 @@ public class API implements Serializable {
 
     private String createdTime;
 
+    private String accessControl;
+    private String accessControlRoles;
+
     public Set<String> getEnvironments() {
         return environments;
     }
@@ -684,5 +687,21 @@ public class API implements Serializable {
 
     public void setCreatedTime(String createdTime) {
         this.createdTime = createdTime;
+    }
+
+    public String getAccessControlRoles() {
+        return accessControlRoles;
+    }
+
+    public void setAccessControlRoles(String accessControlRoles) {
+        this.accessControlRoles = accessControlRoles;
+    }
+
+    public String getAccessControl() {
+        return accessControl;
+    }
+
+    public void setAccessControl(String accessControl) {
+        this.accessControl = accessControl;
     }
 }

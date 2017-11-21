@@ -427,6 +427,15 @@ function showHideRoles(){
 	}
 }
 
+function showHidePublisherAccessControlRoles(){
+    var visibility = $('#access-control').find(":selected").val();
+    if (visibility == "none"){
+        $('#rolesDiv').hide();
+    } else{
+        $('#rolesDiv').show();
+    }
+}
+
 function showHideTenants(){
     var subscription = $('#subscriptions').find(":selected").val();
 
