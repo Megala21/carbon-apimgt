@@ -187,7 +187,7 @@ var faultSequencesLoaded = false;
                     <%=i18n.localize("Visible to Roles")%>:<span class="requiredAstrix">*</span>
                 </label>
                 <div class="controls">
-                    <input type="text" class="input required validInput validateRoles"
+                    <input type="text" class="input required validInput validateUserRoles"
                     id="publisherRoles" name="publisherRoles"  value="<%=api.publisherRoles%>"/>
                     <p class="help-block" id="rolesHelp"><%=i18n.localize("Comma-separated list (e.g.: role1,role2,role3)")%></p>
                 </div>

@@ -4467,6 +4467,7 @@ public class APIProviderHostObject extends ScriptableObject {
         }
 
         boolean valid = false;
+        boolean validateAgainstUserRoles = false;
         String inputRolesSet = (String) args[0];
         String username = (String) args[1];
         String[] inputRoles = null;
@@ -4474,8 +4475,23 @@ public class APIProviderHostObject extends ScriptableObject {
             inputRoles = inputRolesSet.split(",");
         }
 
+        if (args.length == 3 && Boolean.parseBoolean((String) args[2])) {
+            validateAgainstUserRoles = true;
+        }
+
         try {
             String[] roles = APIUtil.getRoleNames(username);
+            if (validateAgainstUserRoles) {
+                String[] userRoleList = KeyManagerHolder.getKeyManagerInstance().getUserRoleList(username);
+                if (inputRoles != null) {
+                    List<String> roleList =  new ArrayList<String>(Arrays.asList(inputRoles));
+                    List<String> userRoles =  new ArrayList<String>(Arrays.asList(userRoleList));
+                    roleList.retainAll(userRoles);
+                    if (roleList.isEmpty()) {
+                        return false;
+                    }
+                }
+            }
 
             if (roles != null && inputRoles != null) {
                 for (String inputRole : inputRoles) {
@@ -4519,12 +4535,12 @@ public class APIProviderHostObject extends ScriptableObject {
             String[] roles = APIUtil.getRoleNames(username);
 
             if (inputRoles != null) {
-            List<String> roleList = Arrays.asList(inputRoles);
-            List<String> userRoles = Arrays.asList(userRoleList);
-            roleList.retainAll(userRoles);
-            if (roleList.isEmpty()) {
-                return "The current user does not have any of these roles."
-            }
+                List<String> roleList = Arrays.asList(inputRoles);
+                List<String> userRoles = Arrays.asList(userRoleList);
+                roleList.retainAll(userRoles);
+                if (roleList.isEmpty()) {
+                    return "The current user does not have any of these roles.";
+                }
             }
             if (roles != null && inputRoles != null) {
                 for (String inputRole : inputRoles) {

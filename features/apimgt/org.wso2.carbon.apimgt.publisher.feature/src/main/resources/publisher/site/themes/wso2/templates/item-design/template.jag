@@ -184,7 +184,8 @@
 													<select class="select required form-control" id="access-control"
 													name="access-control">
                                                     <% if (api) {%>
-														<option value="none" <%if(api.accessControl="none"){%> selected="selected" <%}%>>
+														<option value="none" <%if(api.accessControl=="none"){%>
+														selected="selected" <%}%>>
 														        <%=i18n.localize("Public")%>
                                                         </option>
                                                         <option value="restricted" <%if(api.accessControl=="restricted") {%>
@@ -207,7 +208,8 @@
 															<%=i18n.localize("Visible to Roles")%>:<span class="requiredAstrix">*</span>
 														</label>
 														<div class="col-sm-9">
-															<input type="text" class="form-control required validInput validateRoles"
+															<input type="text" class="form-control required
+															validInput validateUserRoles"
 															id="publisherRoles" name="publisherRoles"  value="<%=api.publisherRoles%>"
 															placeholder="<%=i18n.localize("Comma-separated list (e.g.: role1,role2,role3)")%>"/>
 														</div>
@@ -219,8 +221,9 @@
 														<%=i18n.localize("Visible to Roles")%>:<span class="requiredAstrix">*</span>
 													</label>
 													<div class="col-sm-9">
-														<input type="text" class="form-control required validInput validateRoles"
-														id="publisherRoles" name="publisherRoles" placeholder="<%=i18n.localize("Comma-separated list (e.g.: role1,role2,role3)")%>"/>
+														<input type="text" class="form-control required validInput
+														validateUserRoles" id="publisherRoles" name="publisherRoles"
+														placeholder="<%=i18n.localize("Comma-separated list (e.g.: role1,role2,role3)")%>"/>
 													</div>
 												</div>
 											 <%}%>

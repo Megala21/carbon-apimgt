@@ -1119,26 +1119,22 @@ class APIProviderImpl extends AbstractAPIManager implements APIProvider {
             String apiStatus = api.getStatus().getStatus();
             saveAPIStatus(artifactPath, apiStatus);
             String[] visibleRoles = new String[0];
+            String visibleRolesList = api.getVisibleRoles();
+            String publisherAccessControlRoles = api.getAccessControlRoles();
+            if (visibleRolesList != null) {
+                visibleRoles = visibleRolesList.split(",");
+            }
+            if (publisherAccessControlRoles != null) {
+                publisherAccessControlRoles = publisherAccessControlRoles.replaceAll("//s+", "").toLowerCase();
+            }
+            updateAPIRolesRestrictions(artifactPath, publisherAccessControlRoles, visibleRolesList,
+                    api.getAccessControl());
             if (updatePermissions) {
                 clearResourcePermissions(artifactPath, api.getId());
-                String visibleRolesList = api.getVisibleRoles();
-
-                if (visibleRolesList != null) {
-                    visibleRoles = visibleRolesList.split(",");
-                }
-
-                String publisherAccessControlRoles = api.getAccessControlRoles();
-
-                if (publisherAccessControlRoles != null) {
-                    publisherAccessControlRoles = publisherAccessControlRoles.replaceAll("//s+", "").toLowerCase();
-                }
                 APIUtil.setResourcePermissions(api.getId().getProviderName(), api.getVisibility(), visibleRoles,
-                                               artifactPath, api.getAccessControlRoles());
-                updateAPIRolesRestrictions(artifactPath, publisherAccessControlRoles, visibleRolesList, api.getAccessControl());
+                        artifactPath, api.getAccessControlRoles());
             }
             registry.commitTransaction();
-
-
             transactionCommitted = true;
             if (updatePermissions) {
                 APIManagerConfiguration config = ServiceReferenceHolder.getInstance().
@@ -5097,22 +5093,9 @@ class APIProviderImpl extends AbstractAPIManager implements APIProvider {
         visibleRolesList = (visibleRolesList == null || visibleRolesList.trim().isEmpty()) ? "null" : visibleRolesList;
 
         Resource apiResource = registry.get(artifactPath);
-
-        if (apiResource.getProperty(APIConstants.PUBLISHER_ROLES) != null) {
-            apiResource.setProperty(APIConstants.PUBLISHER_ROLES, publisherAccessControlRoles);
-        } else {
-            apiResource.addProperty(APIConstants.PUBLISHER_ROLES, publisherAccessControlRoles);
-        }
-        if (apiResource.getProperty(APIConstants.STORE_ROLES) != null) {
-            apiResource.setProperty(APIConstants.STORE_ROLES, visibleRolesList);
-        } else {
-            apiResource.addProperty(APIConstants.STORE_ROLES, visibleRolesList);
-        }
-        if (apiResource.getProperty(APIConstants.ACCESS_CONTROL) != null) {
-            apiResource.setProperty(APIConstants.ACCESS_CONTROL, publisherAccessControl);
-        } else {
-            apiResource.addProperty(APIConstants.ACCESS_CONTROL, publisherAccessControl);
-        }
+        apiResource.setProperty(APIConstants.PUBLISHER_ROLES, publisherAccessControlRoles);
+        apiResource.setProperty(APIConstants.STORE_ROLES, visibleRolesList);
+        apiResource.setProperty(APIConstants.ACCESS_CONTROL, publisherAccessControl);
         registry.put(artifactPath, apiResource);
     }
 

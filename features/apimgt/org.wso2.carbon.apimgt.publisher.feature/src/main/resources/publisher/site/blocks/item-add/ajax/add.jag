@@ -207,7 +207,8 @@ if(jagg.isCSRFTokenValid())
             mod = jagg.module("api");
             var user=jagg.getUser().username;
             var roles = request.getParameter("roles");
-            result = mod.validateRoles(roles,user);
+            var validateAgainstUser = request.getParameter("validate");
+            result = mod.validateRoles(roles, user, validateAgainstUser);
             if (result.error) {
                 obj = {
                     error:true,

@@ -2732,13 +2732,15 @@ public final class APIUtil {
         String[] publisherAccessControlRoles = null;
         if (publisherRoles != null) {
             publisherAccessControlRoles = publisherRoles.replace("//s+", "").split(",");
+            if (publisherRoles.trim().isEmpty()) {
+                publisherAccessControlRoles = null;
+            }
         }
         try {
             String resourcePath = RegistryUtils.getAbsolutePath(RegistryContext.getBaseInstance(),
                     APIUtil.getMountedPath(RegistryContext.getBaseInstance(),
                             RegistryConstants.GOVERNANCE_REGISTRY_BASE_PATH)
                             + artifactPath);
-
             String tenantDomain = MultitenantUtils.getTenantDomain(APIUtil.replaceEmailDomainBack(username));
             if (!org.wso2.carbon.utils.multitenancy.MultitenantConstants.SUPER_TENANT_DOMAIN_NAME.equals(tenantDomain)) {
                 int tenantId = ServiceReferenceHolder.getInstance().getRealmService().
