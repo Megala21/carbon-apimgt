@@ -330,6 +330,11 @@ public final class APIConstants {
     public static final String REVOKE_API_URL = OAUTH_CONFIGS + "RevokeAPIURL";
     public static final String ENCRYPT_TOKENS_ON_PERSISTENCE = OAUTH_CONFIGS + "EncryptPersistedTokens";
 
+    public static final String DEFAULT_MODIFIED_ENDPOINT_PASSWORD = "*****"; //5 stars
+    public static final String REGISTRY_HIDDEN_ENDPOINT_PROPERTY = "registry.HiddenEpProperty";
+    public static final String OVERVIEW_ELEMENT = "overview";
+    public static final String ENDPOINT_PASSWORD_ELEMENT = "endpointPpassword";
+
     //documentation rxt
 
     public static final String DOC_NAME = "overview_name";
@@ -1302,7 +1307,7 @@ public final class APIConstants {
 
     public static final String JSON_GRANT_TYPES = "grant_types";
     public static final String JSON_USERNAME = "username";
-
+    public static final String REGEX_ILLEGAL_CHARACTERS_FOR_API_METADATA = "[~!@#;%^*()+={}|<>\"\',\\[\\]&/$\\\\]";
     public static final String PUBLISHER_ROLES = "publisher_roles";
     public static final String ACCESS_CONTROL = "publisher_access_control";
 

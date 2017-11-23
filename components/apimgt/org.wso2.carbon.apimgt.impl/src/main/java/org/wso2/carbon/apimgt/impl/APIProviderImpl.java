@@ -628,6 +628,7 @@ class APIProviderImpl extends AbstractAPIManager implements APIProvider {
     @Override
     public void addAPI(API api) throws APIManagementException {
         try {
+            validateApiInfo(api);
             createAPI(api);
 
             if (log.isDebugEnabled()) {
@@ -677,6 +678,37 @@ class APIProviderImpl extends AbstractAPIManager implements APIProvider {
         } catch (APIManagementException e) {
             throw new APIManagementException("Error in adding API :" + api.getId().getApiName(), e);
         }
+    }
+
+    /**
+     * Validates the name and version of api against illegal characters.
+     *
+     * @param api API info object
+     * @throws APIManagementException
+     */
+    private void validateApiInfo(API api) throws APIManagementException {
+        String apiName = api.getId().getApiName();
+        String apiVersion = api.getId().getVersion();
+        if (containsIllegals(apiName)) {
+            handleException("API Name contains one or more illegal characters  " +
+                    "( " + APIConstants.REGEX_ILLEGAL_CHARACTERS_FOR_API_METADATA + " )");
+        }
+        if (containsIllegals(apiVersion)) {
+            handleException("API Version contains one or more illegal characters  " +
+                    "( " + APIConstants.REGEX_ILLEGAL_CHARACTERS_FOR_API_METADATA + " )");
+        }
+    }
+
+    /**
+     * Check whether a string contains illegal charactersA
+     *
+     * @param toExamine string to examine for illegal characters
+     * @return true if found illegal characters, else false
+     */
+    public boolean containsIllegals(String toExamine) {
+        Pattern pattern = Pattern.compile(APIConstants.REGEX_ILLEGAL_CHARACTERS_FOR_API_METADATA);
+        Matcher matcher = pattern.matcher(toExamine);
+        return matcher.find();
     }
 
     /**
@@ -1866,6 +1898,14 @@ class APIProviderImpl extends AbstractAPIManager implements APIProvider {
             //Create new API version
             artifact.setId(UUID.randomUUID().toString());
             artifact.setAttribute(APIConstants.API_OVERVIEW_VERSION, newVersion);
+
+            //If the APIEndpointPasswordRegistryHandler is enabled set the endpoint password from the registry hidden
+            // property
+            if ((APIConstants.DEFAULT_MODIFIED_ENDPOINT_PASSWORD)
+                    .equals(artifact.getAttribute(APIConstants.API_OVERVIEW_ENDPOINT_PASSWORD))) {
+                artifact.setAttribute(APIConstants.API_OVERVIEW_ENDPOINT_PASSWORD,
+                        apiSourceArtifact.getProperty(APIConstants.REGISTRY_HIDDEN_ENDPOINT_PROPERTY));
+            }
 
             //Check the status of the existing api,if its not in 'CREATED' status set
             //the new api status as "CREATED"
