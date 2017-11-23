@@ -1831,8 +1831,7 @@ public abstract class AbstractAPIManager implements APIManager {
 
             if (searchQuery.startsWith(APIConstants.DOCUMENTATION_SEARCH_TYPE_PREFIX)) {
                 Map<Documentation, API> apiDocMap =
-                        APIUtil.searchAPIsByDoc(userRegistry, tenantIDLocal, userNameLocal, searchQuery.split("=")[1],
-                                APIConstants.STORE_CLIENT);
+                        searchAPIDoc(userRegistry, tenantIDLocal, userNameLocal, searchQuery.split("=")[1]);
                 result.put("apis", apiDocMap);
                 /*Pagination for Document search results is not supported yet, hence length is sent as end-start*/
                 if (apiDocMap.isEmpty()) {
@@ -2394,4 +2393,18 @@ public abstract class AbstractAPIManager implements APIManager {
 
     }
 
+    /**
+     * Search Apis by Doc Content
+     *
+     * @param registry     - Registry which is searched
+     * @param tenantID     - Tenant id of logged in domain
+     * @param username     - Logged in username
+     * @param searchTerm   - Search value for doc
+     * @return - Documentation to APIs map
+     * @throws APIManagementException - If failed to get ArtifactManager for given tenant
+     */
+    public Map<Documentation, API> searchAPIDoc(Registry registry, int tenantID, String username,
+            String searchTerm) throws APIManagementException {
+        return APIUtil.searchAPIsByDoc(registry, tenantID, username, searchTerm, APIConstants.STORE_CLIENT);
+    }
 }

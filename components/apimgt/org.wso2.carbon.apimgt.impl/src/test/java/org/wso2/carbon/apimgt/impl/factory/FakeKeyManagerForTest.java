@@ -115,9 +115,4 @@ public class FakeKeyManagerForTest implements KeyManager {
     @Override public AccessTokenInfo getAccessTokenByConsumerKey(String s) throws APIManagementException {
         return null;
     }
-
-    @Override
-    public String[] getUserRoleList(String userName) throws APIManagementException {
-        return new String[0];
-    }
 }

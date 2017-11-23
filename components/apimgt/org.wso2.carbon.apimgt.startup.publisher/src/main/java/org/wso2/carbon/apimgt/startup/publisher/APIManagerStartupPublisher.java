@@ -383,8 +383,7 @@ public class APIManagerStartupPublisher implements ServerStartupHandler {
 			if (visibleRolesList != null) {
 				visibleRoles = visibleRolesList.split(",");
 			}
-			APIUtil.setResourcePermissions(api.getId().getProviderName(),
-					api.getVisibility(), visibleRoles, artifactPath, api.getAccessControlRoles());
+			APIUtil.setResourcePermissions(api.getId().getProviderName(), api.getVisibility(), visibleRoles, artifactPath);
 			registry.commitTransaction();
 
 			// Generate API Definition for Swagger. 
@@ -433,10 +432,10 @@ public class APIManagerStartupPublisher implements ServerStartupHandler {
 			if (visibleRolesList != null) {
 				visibleRoles = visibleRolesList.split(",");
 			}
-            
-            APIUtil.setResourcePermissions(apiId.getProviderName(), 
-            		api.getVisibility(), visibleRoles, artifact.getPath(), api.getAccessControlRoles());
-            
+
+	        APIUtil.setResourcePermissions(apiId.getProviderName(), api.getVisibility(), visibleRoles,
+			        artifact.getPath());
+
         } catch (RegistryException e) {
             handleException("Failed to add documentation", e);
         } 

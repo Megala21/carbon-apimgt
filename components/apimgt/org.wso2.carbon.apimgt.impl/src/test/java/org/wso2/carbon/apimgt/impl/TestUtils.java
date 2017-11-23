@@ -83,7 +83,13 @@ public class TestUtils {
         
         PowerMockito.when(realmService.getBootstrapRealm()).thenReturn(bootstrapRealm);
         ServiceReferenceHolder.setUserRealm(bootstrapRealm);
-        
+
+        APIManagerConfigurationService amConfigService = Mockito.mock(APIManagerConfigurationService.class);
+        Mockito.doReturn(amConfigService).when(sh).getAPIManagerConfigurationService();
+        APIManagerConfiguration amConfig = Mockito.mock(APIManagerConfiguration.class);
+        Mockito.doReturn(amConfig).when(amConfigService).getAPIManagerConfiguration();
+        Mockito.doReturn(null).when(amConfig).getFirstProperty(APIConstants
+                .API_PUBLISHER_ENABLE_ACCESS_CONTROL_LEVELS);
         PowerMockito.when(tm.getTenantId("carbon.super")).thenReturn(tenantId);
         return sh;
     }

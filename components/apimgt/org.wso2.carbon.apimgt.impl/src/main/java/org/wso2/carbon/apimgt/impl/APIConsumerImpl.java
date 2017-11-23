@@ -21,7 +21,6 @@ package org.wso2.carbon.apimgt.impl;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.solr.client.solrj.util.ClientUtils;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
@@ -598,14 +597,9 @@ class APIConsumerImpl extends AbstractAPIManager implements APIConsumer {
             }
 
             PaginationContext.init(start, end, "ASC", APIConstants.API_OVERVIEW_NAME, maxPaginationLimit);
-            
-            
-            criteria = criteria + APIUtil.getORBasedSearchCriteria(apiStatus);
 
-            if (criteria != null) {
-                criteria += "&";
-            }
-            criteria += getUserRoleListQuery();
+
+            criteria = criteria + APIUtil.getORBasedSearchCriteria(apiStatus);
             GenericArtifactManager artifactManager = APIUtil.getArtifactManager(userRegistry, APIConstants.API_KEY);
             if (artifactManager != null) {
                 if (apiStatus != null && apiStatus.length > 0) {
@@ -3387,27 +3381,6 @@ class APIConsumerImpl extends AbstractAPIManager implements APIConsumer {
     protected APIManagerConfiguration getAPIManagerConfiguration() {
         return ServiceReferenceHolder.getInstance().getAPIManagerConfigurationService()
                 .getAPIManagerConfiguration();
-    }
-
-    /**
-     * To get the user role list query
-     *
-     * @return OR query with the user role list.
-     * @throws APIManagementException API Management Exception.
-     */
-    private String getUserRoleListQuery() throws APIManagementException {
-        String[] userRoles = KeyManagerHolder.getKeyManagerInstance().getUserRoleList(username);
-        StringBuilder rolesQuery = new StringBuilder();
-        rolesQuery.append('(');
-        rolesQuery.append("null");
-        if (userRoles != null) {
-            for (String userRole : userRoles) {
-                rolesQuery.append(" OR ");
-                rolesQuery.append(ClientUtils.escapeQueryChars(userRole.toLowerCase()));
-            }
-        }
-        rolesQuery.append(")");
-        return  APIConstants.STORE_ROLES + "=" + rolesQuery.toString();
     }
 
 }

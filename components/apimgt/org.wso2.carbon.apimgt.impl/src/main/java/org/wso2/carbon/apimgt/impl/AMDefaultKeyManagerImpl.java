@@ -618,29 +618,6 @@ public class AMDefaultKeyManagerImpl extends AbstractKeyManager {
         return null;
     }
 
-    @Override
-    public String[] getUserRoleList(String userName) throws APIManagementException{
-        AxisFault axisFault = null;
-        if (multiTenantUserAdminServiceStub == null) {
-            try {
-                initializeMultiTenantUserAdminStub();
-            } catch (AxisFault axisFault1) {
-                handleException("AxisFault while trying to connect to KeyManager to check the roles " + "of the user "
-                        + userName, axisFault);
-            }
-        }
-        try {
-            return multiTenantUserAdminServiceStub.getUserRoleList(userName);
-        } catch (RemoteException e) {
-            handleException("RemoteException while trying to get the role list of the user '" + userName + "' from "
-                    + "KeyManager", e);
-        } catch (APIKeyMgtException e) {
-            handleException("APIKeyMgtException while trying to get the role list of the user '" + userName + "' from "
-                    + "KeyManager", e);
-        }
-        return null;
-    }
-
     /**
      * common method to throw exceptions.
      *

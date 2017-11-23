@@ -82,7 +82,6 @@ import org.wso2.carbon.apimgt.impl.dto.ThrottleProperties;
 import org.wso2.carbon.apimgt.impl.dto.TierPermissionDTO;
 import org.wso2.carbon.apimgt.impl.dto.WorkflowDTO;
 import org.wso2.carbon.apimgt.impl.dto.WorkflowProperties;
-import org.wso2.carbon.apimgt.impl.factory.KeyManagerHolder;
 import org.wso2.carbon.apimgt.impl.internal.ServiceReferenceHolder;
 import org.wso2.carbon.apimgt.impl.notification.NotificationDTO;
 import org.wso2.carbon.apimgt.impl.notification.NotificationExecutor;
@@ -143,20 +142,7 @@ import java.io.File;
 import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.rmi.RemoteException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
-import java.util.SortedSet;
-import java.util.StringTokenizer;
-import java.util.TreeSet;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -182,10 +168,15 @@ class APIProviderImpl extends AbstractAPIManager implements APIProvider {
 	private static final Log log = LogFactory.getLog(APIProviderImpl.class);
 
 	private final String userNameWithoutChange;
+	private boolean isAccessControlRestrictionIsEnabled;
 
     public APIProviderImpl(String username) throws APIManagementException {
         super(username);
         this.userNameWithoutChange = username;
+        APIManagerConfiguration config = ServiceReferenceHolder.getInstance().
+                getAPIManagerConfigurationService().getAPIManagerConfiguration();
+        isAccessControlRestrictionIsEnabled = Boolean.parseBoolean(
+                config.getFirstProperty(APIConstants.API_PUBLISHER_ENABLE_ACCESS_CONTROL_LEVELS));
     }
 
     protected String getUserNameWithoutChange() {
@@ -1125,14 +1116,13 @@ class APIProviderImpl extends AbstractAPIManager implements APIProvider {
                 visibleRoles = visibleRolesList.split(",");
             }
             if (publisherAccessControlRoles != null) {
-                publisherAccessControlRoles = publisherAccessControlRoles.replaceAll("//s+", "").toLowerCase();
+                publisherAccessControlRoles = publisherAccessControlRoles.replaceAll("\\s+", "").toLowerCase();
             }
-            updateAPIRolesRestrictions(artifactPath, publisherAccessControlRoles, visibleRolesList,
-                    api.getAccessControl());
+            updateAPIRolesRestrictions(artifactPath, publisherAccessControlRoles, api.getAccessControl());
             if (updatePermissions) {
                 clearResourcePermissions(artifactPath, api.getId());
                 APIUtil.setResourcePermissions(api.getId().getProviderName(), api.getVisibility(), visibleRoles,
-                        artifactPath, api.getAccessControlRoles());
+                        artifactPath);
             }
             registry.commitTransaction();
             transactionCommitted = true;
@@ -1150,25 +1140,24 @@ class APIProviderImpl extends AbstractAPIManager implements APIProvider {
                         if ((APIConstants.DOC_API_BASED_VISIBILITY).equalsIgnoreCase(doc.getVisibility().name())) {
                             String documentationPath = APIUtil.getAPIDocPath(api.getId()) + doc.getName();
                             APIUtil.setResourcePermissions(api.getId().getProviderName(), api.getVisibility(),
-                                    visibleRoles, documentationPath, api.getAccessControlRoles());
+                                    visibleRoles, documentationPath);
                             if (Documentation.DocumentSourceType.INLINE.equals(doc.getSourceType())) {
 
                                 String contentPath = APIUtil.getAPIDocContentPath(api.getId(), doc.getName());
                                 APIUtil.setResourcePermissions(api.getId().getProviderName(), api.getVisibility(),
-                                        visibleRoles, contentPath, api.getAccessControlRoles());
+                                        visibleRoles, contentPath);
                             } else if (Documentation.DocumentSourceType.FILE.equals(doc.getSourceType()) &&
                                        doc.getFilePath() != null) {
                                 String filePath = APIUtil.getDocumentationFilePath(api.getId(), doc.getFilePath()
                                         .split("files" + RegistryConstants.PATH_SEPARATOR)[1]);
                                 APIUtil.setResourcePermissions(api.getId().getProviderName(), api.getVisibility(),
-                                        visibleRoles, filePath, api.getAccessControlRoles());
+                                        visibleRoles, filePath);
                             }
                         }
                     }
                 } else {
-
                     APIUtil.setResourcePermissions(api.getId().getProviderName(), api.getVisibility(), visibleRoles,
-                                                   docRootPath, api.getAccessControlRoles());
+                            docRootPath);
                 }
             }
         } catch (Exception e) {
@@ -1831,7 +1820,7 @@ class APIProviderImpl extends AbstractAPIManager implements APIProvider {
                     visibleRoles = visibleRolesList.split(",");
                 }
                 APIUtil.setResourcePermissions(api.getId().getProviderName(), api.getVisibility(), visibleRoles,
-                        filePath, api.getAccessControlRoles());
+                        filePath);
                 documentation.setFilePath(addResourceFile(filePath, icon));
                 APIUtil.setFilePermission(filePath);
             } catch (APIManagementException e) {
@@ -1988,9 +1977,18 @@ class APIProviderImpl extends AbstractAPIManager implements APIProvider {
             if (roles != null) {
                 rolesSet = roles.split(",");
             }
+            Resource apiTargetArtifact = registry.get(targetPath);
+
+            if (apiTargetArtifact != null) {
+                apiTargetArtifact.setProperty(APIConstants.PUBLISHER_ROLES,
+                        apiSourceArtifact.getProperty(APIConstants.PUBLISHER_ROLES));
+                apiTargetArtifact.setProperty(APIConstants.ACCESS_CONTROL,
+                        apiSourceArtifact.getProperty(APIConstants.ACCESS_CONTROL));
+                registry.put(targetPath, apiTargetArtifact);
+            }
+
             APIUtil.setResourcePermissions(api.getId().getProviderName(),
-                    artifact.getAttribute(APIConstants.API_OVERVIEW_VISIBILITY), rolesSet, artifactPath,
-                    api.getAccessControlRoles());
+                    artifact.getAttribute(APIConstants.API_OVERVIEW_VISIBILITY), rolesSet, artifactPath);
             //Here we have to set permission specifically to image icon we added
             String iconPath = artifact.getAttribute(APIConstants.API_OVERVIEW_THUMBNAIL_URL);
             if (iconPath != null && iconPath.lastIndexOf("/apimgt") != -1) {
@@ -2268,8 +2266,7 @@ class APIProviderImpl extends AbstractAPIManager implements APIProvider {
                     visibility=APIConstants.DOC_OWNER_VISIBILITY;
                 }
             }
-
-            APIUtil.setResourcePermissions(api.getId().getProviderName(),visibility, authorizedRoles,contentPath, api.getAccessControlRoles());
+            APIUtil.setResourcePermissions(api.getId().getProviderName(),visibility, authorizedRoles,contentPath);
         } catch (RegistryException e) {
             String msg = "Failed to add the documentation content of : "
                          + documentationName + " of API :" + identifier.getApiName();
@@ -2329,7 +2326,7 @@ class APIProviderImpl extends AbstractAPIManager implements APIProvider {
             clearResourcePermissions(docPath, apiId);
 
             APIUtil.setResourcePermissions(api.getId().getProviderName(), visibility, authorizedRoles,
-                                           artifact.getPath(), api.getAccessControlRoles());
+                                           artifact.getPath());
 
             String docFilePath = artifact.getAttribute(APIConstants.DOC_FILE_PATH);
             if (docFilePath != null && !"".equals(docFilePath)) {
@@ -2340,8 +2337,7 @@ class APIProviderImpl extends AbstractAPIManager implements APIProvider {
                 // to set permissions.
                 int startIndex = docFilePath.indexOf("governance") + "governance".length();
                 String filePath = docFilePath.substring(startIndex, docFilePath.length());
-                APIUtil.setResourcePermissions(api.getId().getProviderName(), visibility, authorizedRoles, filePath,
-                        api.getAccessControlRoles());
+                APIUtil.setResourcePermissions(api.getId().getProviderName(), visibility, authorizedRoles, filePath);
             }
 
         } catch (RegistryException e) {
@@ -2430,17 +2426,16 @@ class APIProviderImpl extends AbstractAPIManager implements APIProvider {
             String publisherAccessControlRoles = api.getAccessControlRoles();
             if (publisherAccessControlRoles != null) {
                 // We are changing to lowercase, as registry search only supports lower-case characters.
-                publisherAccessControlRoles = publisherAccessControlRoles.replace("//s+", "").toLowerCase();
+                publisherAccessControlRoles = publisherAccessControlRoles.replace("\\s+", "").toLowerCase();
                 if (publisherAccessControlRoles.isEmpty()) {
                     publisherAccessControlRoles = null;
                 }
             }
 
             APIUtil.setResourcePermissions(api.getId().getProviderName(), api.getVisibility(), visibleRoles,
-                    artifactPath, publisherAccessControlRoles);
+                    artifactPath);
             publisherAccessControlRoles = publisherAccessControlRoles == null ? "null" : publisherAccessControlRoles;
-            visibleRolesList = visibleRolesList == null ? "null" : visibleRolesList;
-            updateAPIRolesRestrictions(artifactPath, publisherAccessControlRoles, visibleRolesList, api.getAccessControl());
+            updateAPIRolesRestrictions(artifactPath, publisherAccessControlRoles, api.getAccessControl());
             registry.commitTransaction();
 
             transactionCommitted = true;
@@ -2526,16 +2521,15 @@ class APIProviderImpl extends AbstractAPIManager implements APIProvider {
                     visibility = APIConstants.DOC_OWNER_VISIBILITY;
                 }
             }
-            APIUtil.setResourcePermissions(api.getId().getProviderName(),visibility, authorizedRoles, artifact
-                    .getPath(), api.getAccessControlRoles());
+            APIUtil.setResourcePermissions(api.getId().getProviderName(), visibility, authorizedRoles,
+                    artifact.getPath());
             String docFilePath = artifact.getAttribute(APIConstants.DOC_FILE_PATH);
             if (docFilePath != null && !"".equals(docFilePath)) {
                 //The docFilePatch comes as /t/tenanatdoman/registry/resource/_system/governance/apimgt/applicationdata..
                 //We need to remove the /t/tenanatdoman/registry/resource/_system/governance section to set permissions.
                 int startIndex = docFilePath.indexOf("governance") + "governance".length();
                 String filePath = docFilePath.substring(startIndex, docFilePath.length());
-                APIUtil.setResourcePermissions(api.getId().getProviderName(),visibility, authorizedRoles, filePath,
-                        api.getAccessControlRoles());
+                APIUtil.setResourcePermissions(api.getId().getProviderName(),visibility, authorizedRoles, filePath);
                 registry.addAssociation(artifact.getPath(), filePath,APIConstants.DOCUMENTATION_FILE_ASSOCIATION);
             }
             documentation.setId(artifact.getId());
@@ -2768,8 +2762,9 @@ class APIProviderImpl extends AbstractAPIManager implements APIProvider {
         }
     }
 
+    @Override
     public Map<Documentation, API> searchAPIsByDoc(String searchTerm, String searchType) throws APIManagementException {
-        return APIUtil.searchAPIsByDoc(registry, tenantId, username, searchTerm, APIConstants.PUBLISHER_CLIENT);
+        return searchAPIDoc(registry, tenantId, username, searchTerm);
     }
 
     /**
@@ -4298,13 +4293,18 @@ class APIProviderImpl extends AbstractAPIManager implements APIProvider {
             }
             PaginationContext.init(start, end, "ASC", APIConstants.PROVIDER_OVERVIEW_NAME, maxPaginationLimit);
             GenericArtifactManager artifactManager = APIUtil.getArtifactManager(userRegistry, APIConstants.API_KEY);
-            Map<String, List<String>> listMap = new HashMap<String, List<String>>();
 
             if (artifactManager != null) {
-                String criteria = getUserRoleListQuery();
-                List<GovernanceArtifact> genericArtifacts = GovernanceUtils
-                        .findGovernanceArtifacts(criteria, userRegistry, APIConstants.API_RXT_MEDIA_TYPE);
+                List<GovernanceArtifact> genericArtifacts = null;
 
+                if (isAccessControlRestrictionIsEnabled) {
+                    genericArtifacts = GovernanceUtils.findGovernanceArtifacts(getUserRoleListQuery(), userRegistry,
+                            APIConstants.API_RXT_MEDIA_TYPE);
+                } else {
+                    genericArtifacts = GovernanceUtils
+                            .findGovernanceArtifacts(new HashMap<String, List<String>>(), userRegistry,
+                                    APIConstants.API_RXT_MEDIA_TYPE);
+                }
                 totalLength = PaginationContext.getInstance().getLength();
                 if (genericArtifacts == null || genericArtifacts.isEmpty()) {
                     result.put("apis", apiSortedList);
@@ -5086,15 +5086,23 @@ class APIProviderImpl extends AbstractAPIManager implements APIProvider {
         
     }
 
-    protected void updateAPIRolesRestrictions(String artifactPath, String publisherAccessControlRoles, String
-            visibleRolesList, String publisherAccessControl) throws RegistryException {
+    /**
+     * To add API roles restrictions whenever the publisher access control is modified.
+     *
+     * @param artifactPath                Path of the API artifact.
+     * @param publisherAccessControlRoles Role specified for the publisher access control.
+     * @param publisherAccessControl      Publisher Access Control restriction.
+     * @throws RegistryException Registry Exception.
+     */
+    protected void updateAPIRolesRestrictions(String artifactPath, String publisherAccessControlRoles,
+            String publisherAccessControl) throws RegistryException {
         publisherAccessControlRoles = (publisherAccessControlRoles == null || publisherAccessControlRoles.trim()
                 .isEmpty()) ? "null" : publisherAccessControlRoles;
-        visibleRolesList = (visibleRolesList == null || visibleRolesList.trim().isEmpty()) ? "null" : visibleRolesList;
-
+        if (publisherAccessControlRoles.equalsIgnoreCase("null")) {
+            publisherAccessControl = APIConstants.NO_ACCESS_CONTROL;
+        }
         Resource apiResource = registry.get(artifactPath);
-        apiResource.setProperty(APIConstants.PUBLISHER_ROLES, publisherAccessControlRoles);
-        apiResource.setProperty(APIConstants.STORE_ROLES, visibleRolesList);
+        apiResource.setProperty(APIConstants.PUBLISHER_ROLES, publisherAccessControlRoles.replaceAll("\\s+", ""));
         apiResource.setProperty(APIConstants.ACCESS_CONTROL, publisherAccessControl);
         registry.put(artifactPath, apiResource);
     }
@@ -5145,8 +5153,19 @@ class APIProviderImpl extends AbstractAPIManager implements APIProvider {
                 maxPaginationLimit = Integer.MAX_VALUE;
             }
             PaginationContext.init(start, end, "ASC", APIConstants.API_OVERVIEW_NAME, maxPaginationLimit);
-            List<GovernanceArtifact> governanceArtifacts = GovernanceUtils.findGovernanceArtifacts(searchQuery + "&"
-                            + getUserRoleListQuery(), registry, APIConstants.API_RXT_MEDIA_TYPE);
+            List<GovernanceArtifact> governanceArtifacts = null;
+            if (isAccessControlRestrictionIsEnabled) {
+                String criteria = getUserRoleListQuery();
+                if (searchQuery != null && !searchQuery.isEmpty()) {
+                    criteria += "&" + searchQuery;
+                }
+                governanceArtifacts = GovernanceUtils
+                        .findGovernanceArtifacts(criteria, registry, APIConstants.API_RXT_MEDIA_TYPE, true);
+            } else {
+                governanceArtifacts = GovernanceUtils
+                        .findGovernanceArtifacts(searchQuery, registry, APIConstants.API_RXT_MEDIA_TYPE);
+            }
+
             totalLength = PaginationContext.getInstance().getLength();
             boolean isFound = true;
             if (governanceArtifacts == null || governanceArtifacts.size() == 0) {
@@ -5210,8 +5229,101 @@ class APIProviderImpl extends AbstractAPIManager implements APIProvider {
         return result;
     }
 
+    @Override
+    public API getAPI(APIIdentifier identifier) throws APIManagementException {
+        API api = super.getAPI(identifier);
+        return checkAuthorizationAndReturn(api);
+    }
+
+    @Override
+    public Map<Documentation, API> searchAPIDoc(Registry registry, int tenantID, String username,
+            String searchTerm) throws APIManagementException {
+        Map<Documentation, API> apiByDocumentation = APIUtil
+                .searchAPIsByDoc(registry, tenantId, username, searchTerm, APIConstants.PUBLISHER_CLIENT);
+        Map<Documentation, API> filteredAPIDocumentation = new HashMap<Documentation, API>();
+        if (apiByDocumentation != null) {
+            for (Map.Entry<Documentation, API> entry : apiByDocumentation.entrySet()) {
+                API api = entry.getValue();
+                if (checkAuthorizationAndReturn(api) != null) {
+                    filteredAPIDocumentation.put(entry.getKey(), api);
+                }
+            }
+            return filteredAPIDocumentation;
+        }
+        return null;
+    }
+
+    /**
+     * To check authorization of the API against current logged in user.
+     *
+     * @param api        API.
+     * @return the API if it is authorized to be viewed by the user, otherwise null.
+     * @throws APIManagementException APIManagementException
+     */
+    private API checkAuthorizationAndReturn(API api) throws APIManagementException {
+        if (api != null && isAccessControlRestrictionIsEnabled) {
+            String apiPath = APIUtil.getAPIPath(api.getId());
+            try {
+                Resource apiResource = registry.get(apiPath);
+                if (apiResource != null) {
+                    String accessControlProperty = apiResource.getProperty(APIConstants.ACCESS_CONTROL);
+                    if (accessControlProperty == null || accessControlProperty.trim().isEmpty() || accessControlProperty
+                            .equalsIgnoreCase(APIConstants.NO_ACCESS_CONTROL)) {
+                        return api;
+                    } else {
+                        String publisherAccessControlRoles = apiResource.getProperty(APIConstants.PUBLISHER_ROLES);
+
+                        if (publisherAccessControlRoles != null && !publisherAccessControlRoles.trim().isEmpty()) {
+                            String[] accessControlRoleList = publisherAccessControlRoles.replaceAll("\\s+", "")
+                                    .split(",");
+                            if (log.isDebugEnabled()) {
+                                log.debug("API has restricted access to creators and publishers with the roles : "
+                                        + Arrays.toString(accessControlRoleList));
+
+                            }
+                            String[] userRoleList = APIUtil.getListOfRoles(username);
+                            if (log.isDebugEnabled()) {
+                                log.debug("User " + username + " has roles " + Arrays.toString(userRoleList));
+                            }
+                            for (String role : accessControlRoleList) {
+                                if (!role.equalsIgnoreCase("null") && APIUtil.compareRoleList(userRoleList, role)) {
+                                    return api;
+                                }
+                            }
+                            if (log.isDebugEnabled()) {
+                                log.debug("API " + api.getId() + " cannot be accessed by user '" + username + "'. It "
+                                        + "has a publisher access control restriction");
+                            }
+                        } else {
+                            return api;
+                        }
+                    }
+                }
+            } catch (RegistryException e) {
+                throw new APIManagementException(
+                        "Registry Exception while trying to check the access control restriction of API " + api.getId()
+                                .getApiName(), e);
+            }
+        } else {
+            if (api != null) {
+                if (log.isDebugEnabled()) {
+                    log.debug("Publisher access control restriction is not enabled. Hence the API " + api.getId()
+                            + " can be editable and viewable by all the API publishers and creators.");
+                }
+            }
+            return api;
+        }
+        return null;
+    }
+
+    /**
+     * To get the query to retrieve user role list query based on current role list.
+     *
+     * @return the query with user role list.
+     * @throws APIManagementException API Management Exception.
+     */
     private String getUserRoleListQuery() throws APIManagementException {
-        String[] userRoles = KeyManagerHolder.getKeyManagerInstance().getUserRoleList(username);
+        String[] userRoles = APIUtil.getListOfRoles(username);
         StringBuilder rolesQuery = new StringBuilder();
         rolesQuery.append('(');
         rolesQuery.append("null");

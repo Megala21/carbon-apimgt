@@ -4465,105 +4465,42 @@ public class APIProviderHostObject extends ScriptableObject {
         if (args == null || args.length == 0) {
             return false;
         }
-
-        boolean valid = false;
         boolean validateAgainstUserRoles = false;
         String inputRolesSet = (String) args[0];
         String username = (String) args[1];
         String[] inputRoles = null;
+        boolean foundUserRole = false;
         if (inputRolesSet != null) {
-            inputRoles = inputRolesSet.split(",");
+            inputRoles = inputRolesSet.replaceAll("\\s+", "").split(",");
         }
-
         if (args.length == 3 && Boolean.parseBoolean((String) args[2])) {
             validateAgainstUserRoles = true;
         }
 
         try {
             String[] roles = APIUtil.getRoleNames(username);
+            String[] userRoleList = null;
+
             if (validateAgainstUserRoles) {
-                String[] userRoleList = KeyManagerHolder.getKeyManagerInstance().getUserRoleList(username);
-                if (inputRoles != null) {
-                    List<String> roleList =  new ArrayList<String>(Arrays.asList(inputRoles));
-                    List<String> userRoles =  new ArrayList<String>(Arrays.asList(userRoleList));
-                    roleList.retainAll(userRoles);
-                    if (roleList.isEmpty()) {
+                userRoleList = APIUtil.getListOfRoles(username);
+            }
+            if (roles != null && inputRoles != null) {
+                for (String inputRole : inputRoles) {
+                    if (validateAgainstUserRoles && !foundUserRole) {
+                        if (APIUtil.compareRoleList(userRoleList, inputRole)) {
+                            foundUserRole = true;
+                        }
+                    }
+                    if (!APIUtil.compareRoleList(roles, inputRole)) {
                         return false;
                     }
                 }
-            }
-
-            if (roles != null && inputRoles != null) {
-                for (String inputRole : inputRoles) {
-                    for (String role : roles) {
-                        valid = (inputRole.equals(role));
-                        if (valid) { //If we found a match for the input role,then no need to process the for loop further
-                            break;
-                        }
-                    }
-                    //If the input role doesn't match with any of the role existing in the system
-                    if (!valid) {
-                        return valid;
-                    }
-
-                }
-                return valid;
+                return !validateAgainstUserRoles || foundUserRole;
             }
         } catch (Exception e) {
             log.error("Error while validating the input roles.", e);
         }
-
-        return valid;
-    }
-
-
-    public static String jsFunction_validateUserRoles(Context cx, Scriptable thisObj, Object[] args, Function funObj) {
-        if (args == null || args.length == 0) {
-            return "No input was provided";
-        }
-
-        boolean valid = false;
-        String inputRolesSet = (String) args[0];
-        String username = (String) args[1];
-        String[] inputRoles = null;
-        if (inputRolesSet != null) {
-            inputRoles = inputRolesSet.split(",");
-        }
-
-        try {
-            String[] userRoleList = KeyManagerHolder.getKeyManagerInstance().getUserRoleList(username);
-            String[] roles = APIUtil.getRoleNames(username);
-
-            if (inputRoles != null) {
-                List<String> roleList = Arrays.asList(inputRoles);
-                List<String> userRoles = Arrays.asList(userRoleList);
-                roleList.retainAll(userRoles);
-                if (roleList.isEmpty()) {
-                    return "The current user does not have any of these roles.";
-                }
-            }
-            if (roles != null && inputRoles != null) {
-                for (String inputRole : inputRoles) {
-                    for (String role : roles) {
-                        valid = (inputRole.equals(role));
-                        if (valid) { //If we found a match for the input role,then no need to process the for loop
-                            // further
-                            break;
-                        }
-                    }
-                    //If the input role doesn't match with any of the role existing in the system
-                    if (!valid) {
-                        return "Invalid role/roles provided";
-                    }
-
-                }
-                return "valid";
-            }
-        } catch (Exception e) {
-            log.error("Error while validating the input roles.", e);
-        }
-
-        return "in-valid";
+        return true;
     }
 
     /**
