@@ -201,10 +201,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
-import java.util.SortedSet;
-import java.util.TreeMap;
-import java.util.TreeSet;
 import java.util.concurrent.TimeUnit;
 import javax.cache.Cache;
 import javax.cache.CacheConfiguration;
@@ -218,6 +214,8 @@ import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
+
+import static org.wso2.carbon.apimgt.impl.APIConstants.ANONYMOUS_ROLE;
 
 /**
  * This class contains the utility methods used by the implementations of APIManager, APIProvider
@@ -467,7 +465,10 @@ public final class APIUtil {
             api.setUUID(artifact.getId());
             // set rating
             String artifactPath = GovernanceUtils.getArtifactPath(registry, artifact.getId());
-
+            Resource apiResource = registry.get(artifactPath);
+            api.setAccessControl(apiResource.getProperty(APIConstants.ACCESS_CONTROL));
+            api.setAccessControlRoles("null".equals(apiResource.getProperty(APIConstants.PUBLISHER_ROLES))? null :
+                    apiResource.getProperty(APIConstants.PUBLISHER_ROLES));
             api.setRating(getAverageRating(apiId));
             //set description
             api.setDescription(artifact.getAttribute(APIConstants.API_OVERVIEW_DESCRIPTION));
@@ -1405,14 +1406,14 @@ public final class APIUtil {
                     wsdlContentEle = wsdlReader.updateWSDL(wsdl, api);
                     wsdlResource.setContent(wsdlContentEle.toString());
                 }
-
                 registry.put(wsdlResourcePath, wsdlResource);
                 //set the anonymous role for wsld resource to avoid basicauth security.
                 String[] visibleRoles = null;
                 if (api.getVisibleRoles() != null) {
                     visibleRoles = api.getVisibleRoles().split(",");
                 }
-                setResourcePermissions(api.getId().getProviderName(), api.getVisibility(), visibleRoles, wsdlResourcePath);
+                setResourcePermissions(api.getId().getProviderName(), api.getVisibility(), visibleRoles,
+                        wsdlResourcePath);
             }
 
             //set the wsdl resource permlink as the wsdlURL.
@@ -2390,7 +2391,19 @@ public final class APIUtil {
                     " the anonymous user");
         }
 
-        return AuthorizationManager.getInstance().getRolesOfUser(username);
+        String tenantDomain = MultitenantUtils.getTenantDomain(username);
+        try {
+            if (!org.wso2.carbon.utils.multitenancy.MultitenantConstants.SUPER_TENANT_DOMAIN_NAME.equals(tenantDomain)) {
+                int tenantId = ServiceReferenceHolder.getInstance().getRealmService().getTenantManager().getTenantId(tenantDomain);
+                UserStoreManager manager = ServiceReferenceHolder.getInstance().getRealmService().getTenantUserRealm(tenantId).getUserStoreManager();
+                return manager.getRoleListOfUser(username);
+            } else {
+                return AuthorizationManager.getInstance().getRolesOfUser(username);
+            }
+        } catch (UserStoreException e) {
+          throw new APIManagementException("UserStoreException while trying the role list of the user " + username,
+                  e);
+        }
     }
 
     /**
@@ -6619,5 +6632,21 @@ public final class APIUtil {
         String apiPath = APIUtil.getAPIPath(api.getId());
         Resource apiResource = registry.get(apiPath);
         return apiResource.getProperty(APIConstants.REGISTRY_HIDDEN_ENDPOINT_PROPERTY);
+    }
+
+    /**
+     * To check whether given role exist in the array of roles.
+     *
+     * @param userRoleList      Role list to check against.
+     * @param accessControlRole Access Control Role.
+     * @return true if the Array contains the role specified.
+     */
+    public static boolean compareRoleList(String[] userRoleList, String accessControlRole) {
+        for (String userRole : userRoleList) {
+            if (userRole.equalsIgnoreCase(accessControlRole)) {
+                return true;
+            }
+        }
+        return false;
     }
 }
