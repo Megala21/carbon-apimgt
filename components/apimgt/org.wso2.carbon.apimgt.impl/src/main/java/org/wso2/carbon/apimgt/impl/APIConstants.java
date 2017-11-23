@@ -536,8 +536,6 @@ public final class APIConstants {
     public static final String API_PUBLISHER_URL = API_PUBLISHER + "URL";
     public static final String API_PUBLISHER_ENABLE_API_DOC_VISIBILITY_LEVELS = API_PUBLISHER
             + "EnableAPIDocVisibilityLevels";
-    public static final String API_PUBLISHER_ENABLE_ACCESS_CONTROL_LEVELS = API_PUBLISHER
-            + "EnableAccessControl";
     public static final String API_PUBLISHER_APIS_PER_PAGE = API_PUBLISHER + "APIsPerPage";
     public static final String WSO2_API_STORE_TYPE = "wso2";
 
@@ -772,6 +770,7 @@ public final class APIConstants {
 
     public static final String EVERYONE_ROLE = "internal/everyone";
     public static final String ANONYMOUS_ROLE = "system/wso2.anonymous.role";
+    public static final String SUBSCRIBER_ROLE = "Internal/subscriber";
 
     // Anonymous end user, to be used with ACCESS_TOKEN_USER_TYPE_APPLICATION
     public static final String END_USER_ANONYMOUS = "anonymous";
@@ -1305,9 +1304,4 @@ public final class APIConstants {
     public static final String JSON_GRANT_TYPES = "grant_types";
     public static final String JSON_USERNAME = "username";
     public static final String REGEX_ILLEGAL_CHARACTERS_FOR_API_METADATA = "[~!@#;%^*()+={}|<>\"\',\\[\\]&/$\\\\]";
-
-    public static final String PUBLISHER_ROLES = "publisher_roles";
-    public static final String ACCESS_CONTROL = "publisher_access_control";
-    public static final String NO_ACCESS_CONTROL = "none";
-
 }
