@@ -856,6 +856,7 @@ public class APIProviderHostObject extends ScriptableObject {
         FileHostObject fileHostObject = (FileHostObject) apiData.get("imageUrl", apiData);
 //        String contextVal = (String) apiData.get("context", apiData);
         String description = (String) apiData.get("description", apiData);
+        String metaData = (String) apiData.get("metaData", apiData);
         String type = (String) apiData.get("type", apiData);
         /* Business Information*/
         String techOwner = (String) apiData.get("techOwner", apiData);
@@ -950,6 +951,7 @@ public class APIProviderHostObject extends ScriptableObject {
         }
 
         api.setDescription(StringEscapeUtils.unescapeHtml(description));
+        api.setMetaData(StringEscapeUtils.unescapeHtml(metaData));
         HashSet<String> deletedTags = new HashSet<String>(api.getTags());
         deletedTags.removeAll(tag);
         api.removeTags(deletedTags);
@@ -1179,6 +1181,7 @@ public class APIProviderHostObject extends ScriptableObject {
         String version = (String) apiData.get("version", apiData);
         String defaultVersion = (String) apiData.get("defaultVersion", apiData);
         String description = (String) apiData.get("description", apiData);
+        String metaData = (String) apiData.get(APIConstants.META_DATA_PARAMETER, apiData);
         String endpoint = (String) apiData.get("endpoint", apiData);
         String sandboxUrl = (String) apiData.get("sandbox", apiData);
         String visibility = (String) apiData.get("visibility", apiData);
@@ -1469,6 +1472,7 @@ public class APIProviderHostObject extends ScriptableObject {
         }
 
         api.setDescription(StringEscapeUtils.escapeHtml(description));
+        api.setMetaData(StringEscapeUtils.escapeHtml(metaData));
         api.setWsdlUrl(wsdl);
         api.setWadlUrl(wadl);
         api.setLastUpdated(new Date());
@@ -1745,6 +1749,7 @@ public class APIProviderHostObject extends ScriptableObject {
         String version = (String) apiData.get("version", apiData);
         String defaultVersion = (String) apiData.get("defaultVersion", apiData);
         String description = (String) apiData.get("description", apiData);
+        String metaData = (String) apiData.get(APIConstants.META_DATA_PARAMETER, apiData);
         FileHostObject fileHostObject = (FileHostObject) apiData.get("imageUrl", apiData);
         String endpoint = (String) apiData.get("endpoint", apiData);
         String sandboxUrl = (String) apiData.get("sandbox", apiData);
@@ -1763,7 +1768,7 @@ public class APIProviderHostObject extends ScriptableObject {
             visibleRoles = (String) apiData.get("visibleRoles", apiData);
         }
         if (publisherAccessControl != null && publisherAccessControl.equals(APIConstants.API_RESTRICTED_VISIBILITY)) {
-            publisherAccessControlRoles = (String) apiData.get(APIConstants.ACCESS_CONTROL_PARAMETER, apiData);
+            publisherAccessControlRoles = (String) apiData.get(APIConstants.ACCESS_CONTROL_ROLES_PARAMETER, apiData);
         }
 
         String visibleTenants = "";
@@ -2002,6 +2007,7 @@ public class APIProviderHostObject extends ScriptableObject {
             api.setCorsConfiguration(corsConfiguration);
         }
         api.setDescription(StringEscapeUtils.unescapeHtml(description));
+        api.setMetaData(StringEscapeUtils.unescapeHtml(metaData));
         api.setLastUpdated(new Date());
         api.setUrl(endpoint);
         api.setSandboxUrl(sandboxUrl);

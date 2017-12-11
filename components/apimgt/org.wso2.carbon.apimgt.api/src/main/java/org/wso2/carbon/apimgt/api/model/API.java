@@ -38,6 +38,7 @@ public class API implements Serializable {
     private String uuid;
 
     private String description;
+    private String metaData; //Customized meta-data/properties of the API
     private String url;
     private String sandboxUrl;
     private String wsdlUrl;
@@ -708,5 +709,14 @@ public class API implements Serializable {
 
     public void setAccessControl(String accessControl) {
         this.accessControl = accessControl;
+    }
+
+
+    public String getMetaData() {
+        return metaData;
+    }
+
+    public void setMetaData(String metaData) {
+        this.metaData = metaData;
     }
 }

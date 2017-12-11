@@ -215,6 +215,7 @@ public final class APIConstants {
     public static final String API_OVERVIEW_CONTEXT = "overview_context";
     public static final String API_OVERVIEW_CONTEXT_TEMPLATE = "overview_contextTemplate";
     public static final String API_OVERVIEW_DESCRIPTION = "overview_description";
+    public static final String API_OVERVIEW_METADATA = "overview_optionalMetadata";
     public static final String API_OVERVIEW_WSDL = "overview_wsdl";
     public static final String API_OVERVIEW_WADL = "overview_wadl";
     public static final String API_OVERVIEW_PROVIDER = "overview_provider";
@@ -1329,6 +1330,11 @@ public final class APIConstants {
      */
     public static final String ACCESS_CONTROL_PARAMETER = "accessControl";
     public static final String ACCESS_CONTROL_ROLES_PARAMETER = "accessControlRoles";
+
+    /**
+     * Parameter related with optional metadata support.
+     */
+    public static final String META_DATA_PARAMETER = "metaData";
 
     public static final String UN_AUTHORIZED_ERROR_MESSAGE = "User is not authorized to";
 

@@ -293,6 +293,7 @@ public final class APIUtil {
             api.setRating(getAverageRating(apiId));
             //set description
             api.setDescription(artifact.getAttribute(APIConstants.API_OVERVIEW_DESCRIPTION));
+            api.setMetaData(artifact.getAttribute(APIConstants.API_OVERVIEW_METADATA));
             //set last access time
             api.setLastUpdated(registry.get(artifactPath).getLastModified());
             //set uuid
@@ -484,6 +485,7 @@ public final class APIUtil {
             api.setRating(getAverageRating(apiId));
             //set description
             api.setDescription(artifact.getAttribute(APIConstants.API_OVERVIEW_DESCRIPTION));
+            api.setMetaData(artifact.getAttribute(APIConstants.API_OVERVIEW_METADATA));
             //set last access time
             api.setLastUpdated(registry.get(artifactPath).getLastModified());
             // set url
@@ -683,6 +685,7 @@ public final class APIUtil {
             api.setOutSequence(artifact.getAttribute(APIConstants.API_OVERVIEW_OUTSEQUENCE));
             api.setFaultSequence(artifact.getAttribute(APIConstants.API_OVERVIEW_FAULTSEQUENCE));
             api.setDescription(artifact.getAttribute(APIConstants.API_OVERVIEW_DESCRIPTION));
+            api.setDescription(artifact.getAttribute(APIConstants.API_OVERVIEW_METADATA));
             api.setResponseCache(artifact.getAttribute(APIConstants.API_OVERVIEW_RESPONSE_CACHING));
             api.setType(artifact.getAttribute(APIConstants.API_OVERVIEW_TYPE));
             int cacheTimeout = APIConstants.API_RESPONSE_CACHE_TIMEOUT;
@@ -839,6 +842,7 @@ public final class APIUtil {
             artifact.setAttribute(APIConstants.API_OVERVIEW_CONTEXT, api.getContext());
             artifact.setAttribute(APIConstants.API_OVERVIEW_PROVIDER, api.getId().getProviderName());
             artifact.setAttribute(APIConstants.API_OVERVIEW_DESCRIPTION, api.getDescription());
+            artifact.setAttribute(APIConstants.API_OVERVIEW_METADATA, api.getMetaData());
             artifact.setAttribute(APIConstants.API_OVERVIEW_WSDL, api.getWsdlUrl());
             artifact.setAttribute(APIConstants.API_OVERVIEW_WADL, api.getWadlUrl());
             artifact.setAttribute(APIConstants.API_OVERVIEW_THUMBNAIL_URL, api.getThumbnailUrl());
@@ -2559,6 +2563,7 @@ public final class APIUtil {
             api.setRating(res.floatValue());
             //set description
             api.setDescription(artifact.getAttribute(APIConstants.API_OVERVIEW_DESCRIPTION));
+            api.setMetaData(artifact.getAttribute(APIConstants.API_OVERVIEW_METADATA));
             //set last access time
             api.setLastUpdated(registry.get(artifactPath).getLastModified());
             //set uuid
@@ -4524,6 +4529,7 @@ public final class APIUtil {
             api.setOutSequence(artifact.getAttribute(APIConstants.API_OVERVIEW_OUTSEQUENCE));
             api.setFaultSequence(artifact.getAttribute(APIConstants.API_OVERVIEW_FAULTSEQUENCE));
             api.setDescription(artifact.getAttribute(APIConstants.API_OVERVIEW_DESCRIPTION));
+            api.setMetaData(artifact.getAttribute(APIConstants.API_OVERVIEW_METADATA));
             api.setRedirectURL(artifact.getAttribute(APIConstants.API_OVERVIEW_REDIRECT_URL));
             api.setBusinessOwner(artifact.getAttribute(APIConstants.API_OVERVIEW_BUSS_OWNER));
             api.setApiOwner(artifact.getAttribute(APIConstants.API_OVERVIEW_OWNER));
