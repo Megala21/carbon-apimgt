@@ -10,12 +10,14 @@
     if(api){
         var apiUrlId = "name="+encode.forHtml(api.name)+"&version="+encode.forHtml(api.version)+"&provider="+encode.forHtml(api.provider);
         var _description = encode.forHtml(api.description);
+        var _metaData = encode.forHtml(api.metaData);
         var _tags = encode.forHtml(api.tags);
     }
     else{
         var apiUrlId = "";
         var _description = "";
-        var _tags = "";        
+        var _tags = "";
+        var _metaData = "";
     }
 %>
 <script language="javascript">
@@ -321,6 +323,13 @@
 														   <label class="col-sm-3 control-label" for="description"><%=i18n.localize("Description")%>:</label>
 														   <div class="col-sm-9">
 															   <textarea class="form-control validateDescriptionLength" id="description" name="description" rows="3"><%= _description %></textarea>
+															   <p class="help-block"><%=i18n.localize("Maximum 20000 characters.")%></p>
+														   </div>
+													   </div>
+													   <div class="form-group">
+														   <label class="col-sm-3 control-label" for="metaData"><%=i18n.localize("Optional Metadata")%>:</label>
+														   <div class="col-sm-9">
+															   <textarea class="form-control validateDescriptionLength" id="metaData" name="metaData" rows="3"><%= _metaData %></textarea>
 															   <p class="help-block"><%=i18n.localize("Maximum 20000 characters.")%></p>
 														   </div>
 													   </div>

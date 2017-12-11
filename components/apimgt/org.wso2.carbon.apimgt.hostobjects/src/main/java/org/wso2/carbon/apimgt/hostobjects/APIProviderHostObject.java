@@ -2785,6 +2785,7 @@ public class APIProviderHostObject extends ScriptableObject {
                 myn.put(52, myn, checkValue(api.getType()));
                 myn.put(53, myn, checkValue((api.getAccessControl())));
                 myn.put(54, myn, checkValue((api.getAccessControlRoles())));
+                myn.put(55, myn, checkValue(StringEscapeUtils.unescapeHtml(api.getMetaData())));
             } else {
                 handleException("Cannot find the requested API- " + apiName +
                         "-" + version);

@@ -1140,8 +1140,8 @@ class APIProviderImpl extends AbstractAPIManager implements APIProvider {
                         }
                     }
                 }
-            }
-            artifactManager.updateGenericArtifact(updateApiArtifact);
+            }artifactManager.updateGenericArtifact(
+                    updateApiArtifact);
             //write API Status to a separate property. This is done to support querying APIs using custom query (SQL)
             //to gain performance
             String apiStatus = api.getStatus().getStatus();

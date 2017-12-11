@@ -257,6 +257,14 @@ var faultSequencesLoaded = false;
             </div>
 
             <div class="control-group">
+                <label class="control-label" for="editMetaData"><%=i18n.localize("Optional Metadata")%>:</label>
+                <div class="controls">
+                <!-- @todo: param_string -->
+                    <textarea class="input-xlarge" id="editMetaData" rows="3"
+                              style="margin-left: 0px; margin-right: 0px; width: 501px; " name="metaData"><%=encode.forHtml(api.metaData)%></textarea>
+                </div>
+            </div>
+            <div class="control-group">
                    <label class="control-label" for="editTags"><%=i18n.localize("Tags")%>:</label>
                    <div class="controls">
                        <input type="text" class="input-xlarge validInput" id="editTags" name="tags" value="<%=encode.forHtmlAttribute(api.tags)%>"/>

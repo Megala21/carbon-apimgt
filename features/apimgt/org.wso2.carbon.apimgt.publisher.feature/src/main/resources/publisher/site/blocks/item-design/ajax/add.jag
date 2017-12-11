@@ -188,6 +188,7 @@ if(jagg.isCSRFTokenValid())
             apiData.wsdl = request.getParameter("wsdl");
             apiData.accessControl = request.getParameter("accessControl");
             apiData.accessControlRoles = request.getParameter("accessControlRoles", "UTF-8");
+            apiData.metaData = request.getParameter("metaData");
 
             apiData.swagger = request.getParameter("swagger", "UTF-8");
 
@@ -468,6 +469,7 @@ if(jagg.isCSRFTokenValid())
             apiData.visibleRoles = request.getParameter("roles","UTF-8");
             apiData.accessControl = request.getParameter("accessControl");
             apiData.accessControlRoles = request.getParameter("accessControlRoles", "UTF-8");
+            apiData.metaData = request.getParameter("metaData");
 
             apiData.swagger = stringify(parse(request.getParameter("swagger", "UTF-8")));
 
