@@ -421,6 +421,25 @@ var isConfigured = function () {
     }
 }
 
+var isClientCertificateBasedAuthenticationConfigured = function () {
+    var result, log = new Log(), provider = jagg.module("manager").getAPIProviderObj();
+    try {
+        result = provider.isClientCertificateBasedAuthenticationConfigured();
+        if (log.isDebugEnabled()) {
+            log.debug("Invoked checking whether client certificate based authentication is enabled");
+        }
+        return {
+            error: false,
+            isConfigured: result
+        };
+    } catch (e) {
+        log.error(e.message);
+        return {
+            error: e
+        };
+    }
+}
+
 //get all labels in the given tenant space
 var getLabels = function () {
     var MultitenantUtils = Packages.org.wso2.carbon.utils.multitenancy.MultitenantUtils;

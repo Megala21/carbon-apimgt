@@ -909,7 +909,7 @@ public interface APIProvider extends APIManager {
      * @param apiIdentifier Relevant API identifier which the certificate is added against.
      * @param certificate   Relevant public certificate.
      * @param alias         Alias of the certificate.
-     * @return a response code.
+     * @return Response code on whether add client certificate is succeeded.
      * @throws APIManagementException API Management Exception.
      */
     int addClientCertificate(String userName, APIIdentifier apiIdentifier, String certificate, String alias,
@@ -917,7 +917,6 @@ public interface APIProvider extends APIManager {
 
     /**
      * Method to remove the certificate which mapped to the given alias, endpoint from publisher and gateway nodes.
-     *
      * @param userName : UserName of the logged in user.
      * @param alias    : Alias of the certificate which needs to be deleted.
      * @param endpoint : Endpoint which the certificate is mapped to.
@@ -927,13 +926,12 @@ public interface APIProvider extends APIManager {
     int deleteCertificate(String userName, String alias, String endpoint) throws APIManagementException;
 
     /**
-     * Method to remove the client certificates which is mapped to given alias and api identifier from publisher and
-     * gateway nodes.
+     * Method to remove the client certificates which is mapped to given alias and api identifier from database.
      *
      * @param userName      : Name of the logged in user.
      * @param apiIdentifier : Identifier of API for which the certificate need to be deleted.
      * @param alias         : Alias of the certificate which needs to be deleted.
-     * @return Integer which represents the operation status.
+     * @return Status that indicate whether delete client certificate succeeds.
      * @throws APIManagementException API Management Exception.
      */
     int deleteClientCertificate(String userName, APIIdentifier apiIdentifier, String alias)
@@ -946,6 +944,12 @@ public interface APIProvider extends APIManager {
     boolean isConfigured();
 
     /**
+     * Method to check whether mutual ssl based client verification is configured/
+     * @return : TRUE if client certificate related configurations are configured, FALSE otherise.
+     */
+    boolean isClientCertificateBasedAuthenticationConfigured();
+
+    /**
      * Method to retrieve all the certificates uploaded for the tenant represent by the user.
      * @param userName : User name of the logged in user.
      * @return : List of CertificateMetadata
@@ -953,6 +957,14 @@ public interface APIProvider extends APIManager {
      */
     List<CertificateMetadataDTO> getCertificates(String userName) throws APIManagementException;
 
+    /**
+     * Method to get the client certificates uploaded for the given API
+     *
+     * @param userName      Current authenticated user name.
+     * @param apiIdentifier Identifier of the API.
+     * @return List of client certificates specific to the current update.
+     * @throws APIManagementException API Management Exception.
+     */
     List<ClientCertificateDTO> getClientCertificates(String userName, APIIdentifier apiIdentifier) throws
             APIManagementException;
 

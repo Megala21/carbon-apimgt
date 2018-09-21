@@ -5370,6 +5370,21 @@ public class APIProviderHostObject extends ScriptableObject {
     }
 
     /**
+     * This method check the whether the client certificate based authentication is enabled in AM level.
+     *
+     * @param cx      Context.
+     * @param thisObj Scriptable object.
+     * @param args    Arguments.
+     * @param funObj  Function Object.
+     * @return true if the client certificate based authentication is enabled in AM level.
+     */
+    public static boolean jsFunction_isClientCertificateBasedAuthenticationConfigured(Context cx, Scriptable thisObj,
+            Object[] args, Function funObj) {
+        APIProvider apiProvider = getAPIProvider(thisObj);
+        return apiProvider.isClientCertificateBasedAuthenticationConfigured();
+    }
+
+    /**
      * @param failedGateways map of failed environments
      * @return json string of input map
      */

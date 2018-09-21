@@ -5264,6 +5264,12 @@ class APIProviderImpl extends AbstractAPIManager implements APIProvider {
     }
 
     @Override
+    public boolean isClientCertificateBasedAuthenticationConfigured() {
+        CertificateManager certificateManager = CertificateManagerFactory.getCertificateManagerInstance();
+        return certificateManager.isClientCertificateBasedAuthenticationConfigured();
+    }
+
+    @Override
     public List<CertificateMetadataDTO> getCertificates(String userName) throws APIManagementException {
 
         CertificateManager certificateManager = new CertificateManagerImpl();

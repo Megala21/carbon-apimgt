@@ -109,6 +109,7 @@ public interface CertificateManager {
      */
     boolean isConfigured();
 
+    boolean isClientCertificateBasedAuthenticationConfigured();
     /**
      * This method will return the Certificate Metadata object which maps to the endpoint and belongs to the provided
      * tenant.

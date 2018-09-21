@@ -203,6 +203,13 @@ public class CertificateManagerImpl implements CertificateManager {
     }
 
     @Override
+    public boolean isClientCertificateBasedAuthenticationConfigured() {
+        boolean isFilePresent = new File(LISTENER_PROFILE_FILE_PATH).exists();
+        boolean isTableExists = certificateMgtDAO.isClientCertificateTableExists();
+        return isFilePresent && isTableExists;
+    }
+
+    @Override
     public List<CertificateMetadataDTO> getCertificates(String endpoint, int tenantId) {
 
         List<CertificateMetadataDTO> certificateMetadataList = null;

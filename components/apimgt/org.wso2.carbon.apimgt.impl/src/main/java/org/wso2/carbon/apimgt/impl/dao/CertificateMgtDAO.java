@@ -106,6 +106,23 @@ public class CertificateMgtDAO {
         return isExists;
     }
 
+    public boolean isClientCertificateTableExists() {
+        Connection connection = null;
+        PreparedStatement preparedStatement = null;
+        boolean isExists = false;
+        try {
+            connection = APIMgtDBUtil.getConnection();
+            preparedStatement = connection
+                    .prepareStatement(SQLConstants.ClientCertificateConstants.VERIFY_TABLE);
+            isExists = preparedStatement.execute();
+        } catch (SQLException e) {
+            log.warn("Relevant table related with storing client certificates does not exist :" + e.getMessage());
+        } finally {
+            APIMgtDBUtil.closeAllConnections(preparedStatement, connection, null);
+        }
+        return isExists;
+    }
+
     /**
      * Method to add a new client certificate to the database.
      *
