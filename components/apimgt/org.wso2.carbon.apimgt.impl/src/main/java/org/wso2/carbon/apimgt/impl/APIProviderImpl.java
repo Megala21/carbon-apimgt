@@ -73,7 +73,11 @@ import org.wso2.carbon.apimgt.api.model.policy.Pipeline;
 import org.wso2.carbon.apimgt.api.model.policy.Policy;
 import org.wso2.carbon.apimgt.api.model.policy.PolicyConstants;
 import org.wso2.carbon.apimgt.api.model.policy.SubscriptionPolicy;
-import org.wso2.carbon.apimgt.impl.certificatemgt.*;
+import org.wso2.carbon.apimgt.impl.certificatemgt.CertificateManager;
+import org.wso2.carbon.apimgt.impl.certificatemgt.CertificateManagerFactory;
+import org.wso2.carbon.apimgt.impl.certificatemgt.CertificateManagerImpl;
+import org.wso2.carbon.apimgt.impl.certificatemgt.GatewayCertificateManager;
+import org.wso2.carbon.apimgt.impl.certificatemgt.ResponseCode;
 import org.wso2.carbon.apimgt.impl.clients.RegistryCacheInvalidationClient;
 import org.wso2.carbon.apimgt.impl.clients.TierCacheInvalidationClient;
 import org.wso2.carbon.apimgt.impl.dao.ApiMgtDAO;
@@ -1860,7 +1864,7 @@ class APIProviderImpl extends AbstractAPIManager implements APIProvider {
             if (!StringUtils.isBlank(authorizationHeader)) {
                 authProperties.put(APIConstants.AUTHORIZATION_HEADER, authorizationHeader);
             }
-            authProperties.put(APIConstants.API_Security, apiSecurity);
+            authProperties.put(APIConstants.API_SECURITY, apiSecurity);
             authProperties.put(APIConstants.API_LEVEL_POLICY, apiLevelPolicy);
             //Get RemoveHeaderFromOutMessage from tenant registry or api-manager.xml
             String removeHeaderFromOutMessage = APIUtil
@@ -5191,6 +5195,7 @@ class APIProviderImpl extends AbstractAPIManager implements APIProvider {
         return responseCode.getResponseCode();
     }
 
+    @Override
     public int addClientCertificate(String userName, APIIdentifier apiIdentifier, String certificate, String alias,
             String tierName) throws APIManagementException {
 
@@ -5201,8 +5206,8 @@ class APIProviderImpl extends AbstractAPIManager implements APIProvider {
         try {
             int tenantId = ServiceReferenceHolder.getInstance().getRealmService().getTenantManager()
                     .getTenantId(tenantDomain);
-            responseCode = certificateManager.addClientCertificate(apiIdentifier, certificate, alias, tierName,
-                    tenantId);
+            responseCode = certificateManager
+                    .addClientCertificate(apiIdentifier, certificate, alias, tierName, tenantId);
         } catch (UserStoreException e) {
             handleException("Error while reading tenant information, client certificate addition failed for the API "
                     + apiIdentifier.toString(), e);
@@ -5283,6 +5288,7 @@ class APIProviderImpl extends AbstractAPIManager implements APIProvider {
         return certificateManager.getCertificates(tenantId);
     }
 
+    @Override
     public List<ClientCertificateDTO> getClientCertificates(String userName, APIIdentifier apiIdentifier) throws
             APIManagementException {
         int tenantId = -1;
@@ -5293,8 +5299,7 @@ class APIProviderImpl extends AbstractAPIManager implements APIProvider {
         } catch (UserStoreException e) {
             handleException("Error while reading tenant information", e);
         }
-        return CertificateManagerFactory.getCertificateManagerInstance()
-                .getClientCertificates(apiIdentifier, tenantId);
+        return CertificateManagerFactory.getCertificateManagerInstance().getClientCertificates(apiIdentifier, tenantId);
     }
 
     @Override

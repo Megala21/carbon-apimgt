@@ -300,14 +300,14 @@
             <label id="oauth2" class="gatewaysecurity_checkbox_label checkbox add-padding-bottom-1x">
                                                                 <input id="oauth2_checkbox" type="checkbox"
                                                                 class="gatewaysecurity_check"
-        name="gatewaysecurity_oauth2" value="oauth2" <%if(api.gatewaysecurity_oauth2 =="checked"){%>checked<%}%>>
+        name="apisecurity_oauth2" value="oauth2" <%if(api.apisecurity_oauth2 =="checked"){%>checked<%}%>>
                                                                 <span class="helper"><%=i18n.localize("OAuth2")%></span>
                                                         </label>
                                                          <label class="gatewaysecurity_checkbox_label
                                                          checkbox add-padding-bottom-1x">
                                                                 <input id="mutualssl" type="checkbox"
                                                                 class="gatewaysecurity_check"
-        name="gatewaysecurity_mutualssl" value="mutualssl" <%if(api.gatewaysecurity_mutualssl =="checked")
+        name="apisecurity_mutualssl" value="mutualssl" <%if(api.apisecurity_mutualssl =="checked")
         {%>checked<%}%>>
                                                                 <span class="helper"><%=i18n.localize("Mutual SSL")%></span>
                                                         </label>
@@ -322,7 +322,7 @@
 
                                            <!--Manage Certificates - main-->
                                         <div class="form-group" id="manage-certificates" <%if(api
-            .gatewaysecurity_mutualssl !="checked") { %> hidden <% } %>>
+            .apisecurity_mutualssl !="checked") { %> hidden <% } %>>
                                             <div class="control-label col-sm-3"></div>
                                                 <div class="col-sm-4">
                                                         <a href="#" class="manage-certs but"
@@ -338,7 +338,7 @@
 
                                                       <!--Custom Authorization Header Start-->
                                                            <div id="authConfigs" <%if
-        (isClientCertificateBasedAuthenticationEnabled && api .gatewaysecurity_oauth2 !="checked"){%>hidden<%}%>>
+        (isClientCertificateBasedAuthenticationEnabled && api.apisecurity_oauth2 !="checked"){%>hidden<%}%>>
                                                                 <div class="form-group">
                                                                     <label class="control-label col-sm-3" for="authConfiguration"><%=i18n.localize("Authorization Header")%>:
                                                                         <a class="help_popup" help_data="authorization_header_help" title="authorization_header_help" data-trigger="hover" data-placement="bottom">

@@ -944,8 +944,8 @@ public interface APIProvider extends APIManager {
     boolean isConfigured();
 
     /**
-     * Method to check whether mutual ssl based client verification is configured/
-     * @return : TRUE if client certificate related configurations are configured, FALSE otherise.
+     * Method to check whether mutual ssl based client verification is configured.
+     * @return : TRUE if client certificate related configurations are configured, FALSE otherwise.
      */
     boolean isClientCertificateBasedAuthenticationConfigured();
 
@@ -958,7 +958,7 @@ public interface APIProvider extends APIManager {
     List<CertificateMetadataDTO> getCertificates(String userName) throws APIManagementException;
 
     /**
-     * Method to get the client certificates uploaded for the given API
+     * Method to get the client certificates uploaded for the given API.
      *
      * @param userName      Current authenticated user name.
      * @param apiIdentifier Identifier of the API.

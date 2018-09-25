@@ -125,15 +125,22 @@ public class ThriftKeyValidatorClient {
         return apiKeyValidationInfoDTO;
     }
 
+    /**
+     * To get the tier information related with the certificate and API.
+     *
+     * @param apiIdentifier         Relevant API Identifier.
+     * @param certificateIdentifier Relevant certificate identifier.
+     * @return tier information related with API Identifier and certificate.
+     * @throws APISecurityException API Security Exception will be thrown in the event of failure.
+     */
     public CertificateTierDTO getCertificateTierInformation(APIIdentifier apiIdentifier,
             String certificateIdentifier) throws APISecurityException {
 
-        CertificateTierDTO certificateTierDTO;
         org.wso2.carbon.apimgt.impl.generated.thrift.CertificateTierDTO thriftDTO;
-
         try {
-            thriftDTO = keyValClient.getCertificateTierInformation(getGeneratedIdentifier(apiIdentifier),
-                    certificateIdentifier, sessionId);
+            thriftDTO = keyValClient
+                    .getCertificateTierInformation(getGeneratedIdentifier(apiIdentifier), certificateIdentifier,
+                            sessionId);
 
         } catch (Exception e) {
             try {
@@ -143,8 +150,9 @@ public class ThriftKeyValidatorClient {
                 //we re-initialize the thrift client in case open sockets have been closed due to
                 //key manager restart.
                 reInitializeClient();
-                thriftDTO = keyValClient.getCertificateTierInformation(getGeneratedIdentifier(apiIdentifier),
-                        certificateIdentifier, sessionId);
+                thriftDTO = keyValClient
+                        .getCertificateTierInformation(getGeneratedIdentifier(apiIdentifier), certificateIdentifier,
+                                sessionId);
 
             } catch (Exception e1) {
                 throw new APISecurityException(APISecurityConstants.API_AUTH_GENERAL_ERROR, e1.getMessage(), e1);
@@ -153,6 +161,13 @@ public class ThriftKeyValidatorClient {
         return toImplDTO(thriftDTO);
     }
 
+    /**
+     * To convert the {@link org.wso2.carbon.apimgt.impl.generated.thrift.CertificateTierDTO} to
+     * {@link CertificateTierDTO}.
+     *
+     * @param thriftDTO Instance of {@link org.wso2.carbon.apimgt.impl.generated.thrift.CertificateTierDTO}
+     * @return Converted instance of {@link CertificateTierDTO}
+     */
     private CertificateTierDTO toImplDTO(org.wso2.carbon.apimgt.impl.generated.thrift.CertificateTierDTO thriftDTO) {
         CertificateTierDTO certificateTierDTO = new CertificateTierDTO();
         certificateTierDTO.setSpikeArrestLimit(thriftDTO.getSpikeArrestLimit());
@@ -162,6 +177,12 @@ public class ThriftKeyValidatorClient {
         return certificateTierDTO;
     }
 
+    /**
+     * To convert the {@link APIIdentifier} to {@link org.wso2.carbon.apimgt.impl.generated.thrift.APIIdentifier}
+     *
+     * @param apiIdentifier APIIdentifier that need to be converted.
+     * @return Converted API Identifier.
+     */
     private org.wso2.carbon.apimgt.impl.generated.thrift.APIIdentifier getGeneratedIdentifier(APIIdentifier apiIdentifier) {
         org.wso2.carbon.apimgt.impl.generated.thrift.APIIdentifier generatedIdentifier =
                 new org.wso2.carbon.apimgt.impl.generated.thrift.APIIdentifier();

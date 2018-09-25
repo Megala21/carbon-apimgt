@@ -93,7 +93,10 @@ public class CertificateManagerImpl implements CertificateManager {
         ResponseCode responseCode;
         try {
             responseCode = certificateMgtUtils.validateCertificate(alias, certificate);
-            if (responseCode == ResponseCode.SUCCESS && !certificateMgtDAO.checkWhetherAliasExist(alias)) {
+            if (certificateMgtDAO.checkWhetherAliasExist(alias)) {
+                responseCode = ResponseCode.ALIAS_EXISTS_IN_TRUST_STORE;
+            }
+            if (responseCode == ResponseCode.SUCCESS) {
                 certificateMgtDAO.addClientCertificate(certificate, apiIdentifier, alias, tierName, tenantId);
             }
         } catch (CertificateManagementException e) {
@@ -148,7 +151,6 @@ public class CertificateManagerImpl implements CertificateManager {
         } catch (CertificateManagementException e) {
             log.error("Error persisting/ deleting certificate metadata. ", e);
             return ResponseCode.INTERNAL_SERVER_ERROR;
-
         }
     }
 
@@ -221,12 +223,13 @@ public class CertificateManagerImpl implements CertificateManager {
         return certificateMetadataList;
     }
 
+    @Override
     public List<ClientCertificateDTO> getClientCertificates(APIIdentifier apiIdentifier, int tenantId) {
         List<ClientCertificateDTO> clientCertificateDTOList = null;
         try {
             clientCertificateDTOList = certificateMgtDAO.getClientCertificates(apiIdentifier, tenantId);
         } catch (CertificateManagementException e) {
-            e.printStackTrace();
+            log.error("Error while retrieving client certificates for the api " + apiIdentifier.toString(), e);
         }
         return clientCertificateDTOList;
     }

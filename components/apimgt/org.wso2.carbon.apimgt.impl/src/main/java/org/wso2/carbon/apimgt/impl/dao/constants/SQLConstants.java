@@ -2895,20 +2895,14 @@ public class SQLConstants {
 
         public static final String SELECT_CERTIFICATE_FOR_ALIAS = "SELECT * FROM AM_API_CLIENT_CERTIFICATE "
                 + "WHERE ALIAS=? AND REMOVED=?";
-
-        public static final String GET_CERTIFICATE_ALL_TENANTS = "SELECT * FROM AM_CERTIFICATE_METADATA WHERE " +
-                "(ALIAS=?)";
-        public static final String GET_CERTIFICATE_TENANT = "SELECT * FROM AM_CERTIFICATE_METADATA WHERE TENANT_ID=? " +
-                "AND (ALIAS=? OR END_POINT=?)";
-
         public static final String PRE_DELETE_CERTIFICATES = "DELETE FROM AM_API_CLIENT_CERTIFICATE "
                 + "WHERE TENANT_ID=? and API_ID=? and REMOVED=? and ALIAS=?";
 
         public static final String DELETE_CERTIFICATES = "UPDATE AM_API_CLIENT_CERTIFICATE SET REMOVED = ? "
                 + "WHERE TENANT_ID=? AND ALIAS=? AND API_ID=?";
 
-        public static final String SELECT_CERTIFICATE_TIER = "SELECT TIER_NAME FROM "
-                + "AM_API_CLIENT_CERTIFICATE WHERE API_ID=? AND UNIQUE_IDENTIFIER=?";
+        public static final String SELECT_CERTIFICATE_TIER = "SELECT TIER_NAME FROM AM_API_CLIENT_CERTIFICATE WHERE "
+                + "API_ID=? AND UNIQUE_IDENTIFIER=?";
 
         public static final String SELECT_CERTIFICATE_TIER_ADVANCED = "SELECT "
                 + "CER.TIER_NAME, "
@@ -2920,7 +2914,5 @@ public class SQLConstants {
                 + "WHERE API_ID=? AND UNIQUE_IDENTIFIER=? AND PS.NAME = CER.TIER_NAME AND PS.TENANT_ID=CER.TENANT_ID";
 
         public static final String VERIFY_TABLE = "SELECT ALIAS from AM_API_CLIENT_CERTIFICATE";
-        public static final String CERTIFICATE_COUNT_QUERY = "SELECT COUNT(*) AS count FROM AM_CERTIFICATE_METADATA " +
-                "WHERE TENANT_ID=?";
     }
 }

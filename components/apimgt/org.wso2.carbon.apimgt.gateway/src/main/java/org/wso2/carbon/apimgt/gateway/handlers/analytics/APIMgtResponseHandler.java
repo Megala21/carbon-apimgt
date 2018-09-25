@@ -46,8 +46,6 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Map;
 
-import static org.wso2.carbon.apimgt.gateway.handlers.Utils.handleValue;
-
 /**
  * This mediator is to publish events upon success API invocations
  */

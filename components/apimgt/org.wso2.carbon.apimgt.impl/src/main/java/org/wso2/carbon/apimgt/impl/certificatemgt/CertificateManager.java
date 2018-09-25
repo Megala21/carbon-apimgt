@@ -61,6 +61,7 @@ public interface CertificateManager {
      */
     ResponseCode addClientCertificate(APIIdentifier apiIdentifier, String certificate, String alias, String tierName,
             int tenantId);
+
     /**
      * Method to delete certificate from publisher trust store.
      *
@@ -74,7 +75,7 @@ public interface CertificateManager {
     ResponseCode deleteCertificateFromParentNode(String alias, String endpoint, int tenantId);
 
     /**
-     * Method to delete the client certificate from publisher trust store.
+     * Method to delete the client certificate from publisher node.
      *
      * @param apiIdentifier : Identifier of the API which particular client certificate is added against.
      * @param alias         : Alias of the certificate which needs to be removed.
@@ -109,7 +110,13 @@ public interface CertificateManager {
      */
     boolean isConfigured();
 
+    /**
+     * This method checks whether API Management is configured to handle client certificate based authentication.
+     *
+     * @return true if the API manager is configured to handle mutual ssl based authentication, otherwise false.
+     */
     boolean isClientCertificateBasedAuthenticationConfigured();
+
     /**
      * This method will return the Certificate Metadata object which maps to the endpoint and belongs to the provided
      * tenant.
@@ -126,7 +133,7 @@ public interface CertificateManager {
      * tenant.
      *
      * @param apiIdentifier : Identifier of the API
-     * @param tenantId : The Id of the tenant that endpoint belongs to.
+     * @param tenantId      : The Id of the tenant that endpoint belongs to.
      * @return CertificateMetadataDTO object which contains the certificate meta data.
      */
     List<ClientCertificateDTO> getClientCertificates(APIIdentifier apiIdentifier, int tenantId);

@@ -56,15 +56,7 @@ public class WSAPIKeyDataStore implements APIKeyDataStore {
             throw new APISecurityException(APISecurityConstants.API_AUTH_GENERAL_ERROR,
                     "Error while accessing backend services for API key validation", e);
         } finally {
-            try {
-                if (client != null) {
-                    clientPool.release(client);
-                }
-            } catch (Exception exception) {
-                if (log.isDebugEnabled()) {
-                    log.debug("Releasing client from client pool caused an exception = " + exception.getMessage());
-                }
-            }
+            releaseClientToPool(client);
         }
     }
 
@@ -76,20 +68,13 @@ public class WSAPIKeyDataStore implements APIKeyDataStore {
             client = clientPool.get();
             return client.getCertificateTierInformation(apiIdentifier, certificateIdentifier);
         } catch (APISecurityException ex) {
-            throw new APISecurityException(ex.getErrorCode(), "Resource forbidden", ex);
+            throw new APISecurityException(ex.getErrorCode(), "Error while getting certificate tier information for "
+                    + "the API " + apiIdentifier.toString(), ex);
         } catch (Exception e) {
             throw new APISecurityException(APISecurityConstants.API_AUTH_GENERAL_ERROR,
                     "Error while accessing backend services for API key validation", e);
         } finally {
-            try {
-                if (client != null) {
-                    clientPool.release(client);
-                }
-            } catch (Exception exception) {
-                if (log.isDebugEnabled()) {
-                    log.debug("Releasing client from client pool caused an exception = " + exception.getMessage());
-                }
-            }
+            releaseClientToPool(client);
         }
     }
 
@@ -104,18 +89,26 @@ public class WSAPIKeyDataStore implements APIKeyDataStore {
             throw new APISecurityException(APISecurityConstants.API_AUTH_GENERAL_ERROR,
                                            "Error while accessing backend services for API key validation", e);
         } finally {
-            try {
-                if (client != null) {
-                    clientPool.release(client);
-                }
-            } catch (Exception exception) {
-                if (log.isDebugEnabled()) {
-                    log.debug("Releasing client from client pool caused an exception = " + exception.getMessage());
-                }
-            }
+           releaseClientToPool(client);
         }
     }
 
+    /**
+     * To release the APIKeyValidatorClient to the client pool.
+     *
+     * @param client Relevant client that need to be released to client pool.
+     */
+    private void releaseClientToPool(APIKeyValidatorClient client) {
+        try {
+            if (client != null) {
+                clientPool.release(client);
+            }
+        } catch (Exception exception) {
+            if (log.isDebugEnabled()) {
+                log.debug("Releasing APIKeyValidator client from client pool caused an exception = " + exception.getMessage());
+            }
+        }
+    }
 
     public void cleanup() {
 

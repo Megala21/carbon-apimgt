@@ -57,8 +57,17 @@ public interface APIKeyDataStore {
                                                  String requiredAuthenticationLevel, String clientDomain,
                                                  String matchingResource, String httpVerb) throws APISecurityException;
 
+    /**
+     * To get the tier information related with the certificate.
+     *
+     * @param apiIdentifier         API Identifier related with the the certificate.
+     * @param certificateIdentifier Unique identifier of the certificate.
+     * @return Certificate tier information related with the certificate.
+     * @throws APISecurityException API Security Exception.
+     */
     CertificateTierDTO getCertificateTierInformation(APIIdentifier apiIdentifier, String certificateIdentifier)
             throws APISecurityException;
+
     /**
      * Get API Resource URI Templates
      *

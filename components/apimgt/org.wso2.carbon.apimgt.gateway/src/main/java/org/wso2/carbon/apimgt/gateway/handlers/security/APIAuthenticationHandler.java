@@ -38,7 +38,6 @@ import org.apache.synapse.rest.RESTConstants;
 import org.apache.synapse.transport.nhttp.NhttpConstants;
 import org.apache.synapse.transport.passthru.PassThroughConstants;
 import org.apache.synapse.transport.passthru.util.RelayUtils;
-import org.bouncycastle.jce.PrincipalUtil;
 import org.wso2.carbon.apimgt.api.APIManagementException;
 import org.wso2.carbon.apimgt.api.model.APIIdentifier;
 import org.wso2.carbon.apimgt.gateway.APIMgtGatewayConstants;
@@ -48,7 +47,6 @@ import org.wso2.carbon.apimgt.gateway.internal.ServiceReferenceHolder;
 import org.wso2.carbon.apimgt.impl.APIConstants;
 import org.wso2.carbon.apimgt.impl.APIManagerConfigurationService;
 import org.wso2.carbon.apimgt.impl.dto.CertificateTierDTO;
-import org.wso2.carbon.apimgt.impl.dto.VerbInfoDTO;
 import org.wso2.carbon.apimgt.impl.utils.APIUtil;
 import org.wso2.carbon.metrics.manager.MetricManager;
 import org.wso2.carbon.metrics.manager.Timer;
@@ -91,10 +89,20 @@ public class APIAuthenticationHandler extends AbstractHandler implements Managed
     private String apiSecurity;
     private String apiLevelPolicy;
 
+    /**
+     * To get the API level tier policy.
+     *
+     * @return Relevant tier policy related with API level policy.
+     */
     public String getAPILevelPolicy() {
         return apiLevelPolicy;
     }
 
+    /**
+     * To set the API level tier policy.
+     *
+     * @param apiLevelPolicy Relevant API level tier policy related with this API.
+     */
     public void setAPILevelPolicy(String apiLevelPolicy) {
         this.apiLevelPolicy = apiLevelPolicy;
     }
@@ -119,10 +127,20 @@ public class APIAuthenticationHandler extends AbstractHandler implements Managed
         this.authorizationHeader = authorizationHeader;
     }
 
+    /**
+     * To get the API level security expected for the current API in gateway level.
+     *
+     * @return API level security related with the current API.
+     */
     public String getAPISecurity() {
         return apiSecurity;
     }
 
+    /**
+     * To set the API level security of current API.
+     *
+     * @param apiSecurity Relevant API level security.
+     */
     public void setAPISecurity(String apiSecurity) {
         this.apiSecurity = apiSecurity;
     }
@@ -190,7 +208,7 @@ public class APIAuthenticationHandler extends AbstractHandler implements Managed
 
             if ((isResourceNotProtected(messageContext) && isAuthenticate(messageContext)) ||
                     ((!isMutualSSLProtected() || isMutalSSLAuthenticationSucceeded(messageContext))
-                            && (!isOauthProtected() || isAuthenticate(messageContext)))) {
+                            && (!isOAuthProtected() || isAuthenticate(messageContext)))) {
                 setAPIParametersToMessageContext(messageContext);
                 return true;
             }
@@ -236,16 +254,16 @@ public class APIAuthenticationHandler extends AbstractHandler implements Managed
      *
      * @return true if the API is oauth2 token protected, otherwise false.
      */
-    private boolean isOauthProtected() {
+    private boolean isOAuthProtected() {
 
-        boolean isOauthProtected = false;
+        boolean isOAuthProtected = false;
         if (StringUtils.isEmpty(apiSecurity)) {
-            apiSecurity = APIConstants.DEFAULT_GATEWAY_SECURITY_OAUTH2;
-            isOauthProtected = true;
-        } else if (apiSecurity.contains(APIConstants.DEFAULT_GATEWAY_SECURITY_OAUTH2)) {
-            isOauthProtected = true;
+            apiSecurity = APIConstants.DEFAULT_API_SECURITY_OAUTH2;
+            isOAuthProtected = true;
+        } else if (apiSecurity.contains(APIConstants.DEFAULT_API_SECURITY_OAUTH2)) {
+            isOAuthProtected = true;
         }
-        return isOauthProtected;
+        return isOAuthProtected;
     }
 
     /**
@@ -262,6 +280,13 @@ public class APIAuthenticationHandler extends AbstractHandler implements Managed
         return isMutualSSLProtected;
     }
 
+    /**
+     * To check whether particular resource, which is currently trying to be accesses is protected or not.
+     *
+     * @param messageContext Relevant message context.
+     * @return true if resource is not protected, otherwise false.
+     * @throws APISecurityException API Security Exception.
+     */
     private boolean isResourceNotProtected(MessageContext messageContext) throws APISecurityException {
 
         if (keyValidator == null) {
@@ -271,6 +296,7 @@ public class APIAuthenticationHandler extends AbstractHandler implements Managed
         messageContext.setProperty(APIConstants.RESOURCE_AUTHENTICATION_SCHEME, resourceAuthenticationScheme);
         return resourceAuthenticationScheme.equalsIgnoreCase(AUTH_NO_AUTHENTICATION);
     }
+
     /**
      * To check whether mutual SSL authentication succeeded for current API invocation.
      *
@@ -283,7 +309,6 @@ public class APIAuthenticationHandler extends AbstractHandler implements Managed
 
         org.apache.axis2.context.MessageContext axis2MessageContext = ((Axis2MessageContext) messageContext)
                 .getAxis2MessageContext();
-
         // try to retrieve the certificate
         Object sslCertObject = axis2MessageContext.getProperty(NhttpConstants.SSL_CLIENT_AUTH_CERT_X509);
 
@@ -297,47 +322,60 @@ public class APIAuthenticationHandler extends AbstractHandler implements Managed
             throw new APISecurityException(APISecurityConstants.MUTUAL_SSL_VALIDATION_FAILURE,
                     APISecurityConstants.MUTUAL_SSL_VALIDATION_FAILURE_MESSAGE);
         } else {
-            if (!apiSecurity.contains(APIConstants.DEFAULT_GATEWAY_SECURITY_OAUTH2)) {
-                AuthenticationContext authContext = new AuthenticationContext();
-                authContext.setAuthenticated(true);
-                APISecurityUtils.setAuthenticationContext(messageContext, authContext, null);
-                X509Certificate[] certs = (X509Certificate[]) sslCertObject;
-                X509Certificate x509Certificate = certs[0];
-                String subjectDN = x509Certificate.getSubjectDN().getName();
-                String uniqueIdentifier = String
-                        .valueOf(x509Certificate.getSerialNumber() + "_" + x509Certificate.getIssuerDN());
-                authContext.setUsername(subjectDN);
-                try {
-                    LdapName ldapDN = new LdapName(subjectDN);
-                    for(Rdn rdn: ldapDN.getRdns()) {
-                        if (APIConstants.CERTIFICATE_COMMON_NAME.equalsIgnoreCase(rdn.getType())) {
-                            authContext.setUsername((String) rdn.getValue());
-                        }
-                    }
-                } catch (InvalidNameException e) {
-                    log.warn("Cannot get the CN name from certificate:" + e.getMessage());
-                    authContext.setUsername(subjectDN);
-                }
-                authContext.setApiTier(apiLevelPolicy);
-                CertificateTierDTO certificateTierDTO =
-                        keyValidator.getCertificateTierInformation(getAPIIdentifier(messageContext),
-                        uniqueIdentifier);
-                authContext.setApiKey(uniqueIdentifier);
-                authContext.setKeyType(APIConstants.API_KEY_TYPE_PRODUCTION);
-                /* If the relevant certificate does not have any tier information, then the relevant certificate is
-                not added against this API, hence adding unauthenticated tier as subscription tier */
-                if (StringUtils.isEmpty(certificateTierDTO.getTier())) {
-                    authContext.setTier(APIConstants.UNAUTHENTICATED_TIER);
-                    authContext.setStopOnQuotaReach(true);
-                } else {
-                    authContext.setTier(certificateTierDTO.getTier());
-                    authContext.setStopOnQuotaReach(certificateTierDTO.isStopOnQuotaReach());
-                    authContext.setSpikeArrestLimit(certificateTierDTO.getSpikeArrestLimit());
-                    authContext.setSpikeArrestUnit(certificateTierDTO.getSpikeArrestUnit());
-                }
+            // If mutual SSL is the only method used for gateway security, then set the auth context at this point.
+            if (!apiSecurity.contains(APIConstants.DEFAULT_API_SECURITY_OAUTH2)) {
+                setAuthContext(messageContext, sslCertObject);
             }
         }
         return true;
+    }
+
+    /**
+     * To set the authentication context in current message context.
+     *
+     * @param messageContext Relevant message context.
+     * @param sslCertObject  SSL certificate object.
+     * @throws APISecurityException API Security Exception.
+     */
+    private void setAuthContext(MessageContext messageContext, Object sslCertObject) throws APISecurityException {
+
+        AuthenticationContext authContext = new AuthenticationContext();
+        authContext.setAuthenticated(true);
+        APISecurityUtils.setAuthenticationContext(messageContext, authContext, null);
+        X509Certificate[] certs = (X509Certificate[]) sslCertObject;
+        X509Certificate x509Certificate = certs[0];
+        String subjectDN = x509Certificate.getSubjectDN().getName();
+        String uniqueIdentifier = String
+                .valueOf(x509Certificate.getSerialNumber() + "_" + x509Certificate.getIssuerDN());
+        authContext.setUsername(subjectDN);
+        try {
+            LdapName ldapDN = new LdapName(subjectDN);
+            for (Rdn rdn : ldapDN.getRdns()) {
+                if (APIConstants.CERTIFICATE_COMMON_NAME.equalsIgnoreCase(rdn.getType())) {
+                    authContext.setUsername((String) rdn.getValue());
+                }
+            }
+        } catch (InvalidNameException e) {
+            log.warn("Cannot get the CN name from certificate:" + e.getMessage());
+            authContext.setUsername(subjectDN);
+        }
+        authContext.setApiTier(apiLevelPolicy);
+        APIIdentifier apiIdentifier = getAPIIdentifier(messageContext);
+        CertificateTierDTO certificateTierDTO = keyValidator
+                .getCertificateTierInformation(getAPIIdentifier(messageContext), uniqueIdentifier);
+        authContext.setApiKey(uniqueIdentifier + "_" + apiIdentifier.toString());
+        authContext.setKeyType(APIConstants.API_KEY_TYPE_PRODUCTION);
+        /* If the relevant certificate does not have any tier information, then the relevant certificate is
+        not added against this API, hence adding unauthenticated tier as subscription tier */
+        if (StringUtils.isEmpty(certificateTierDTO.getTier())) {
+            authContext.setTier(APIConstants.UNAUTHENTICATED_TIER);
+            authContext.setStopOnQuotaReach(true);
+        } else {
+            authContext.setTier(certificateTierDTO.getTier());
+            authContext.setStopOnQuotaReach(certificateTierDTO.isStopOnQuotaReach());
+            authContext.setSpikeArrestLimit(certificateTierDTO.getSpikeArrestLimit());
+            authContext.setSpikeArrestUnit(certificateTierDTO.getSpikeArrestUnit());
+        }
     }
 
     protected void stopMetricTimer(Timer.Context context) {
@@ -503,10 +541,10 @@ public class APIAuthenticationHandler extends AbstractHandler implements Managed
         String applicationName = "";
         String applicationId = "";
         if (authContext != null) {
-            consumerKey = Utils.handleValue(authContext.getConsumerKey());
-            username = Utils.handleValue(authContext.getUsername());
-            applicationName = Utils.handleValue(authContext.getApplicationName());
-            applicationId = Utils.handleValue(authContext.getApplicationId());
+            consumerKey = authContext.getConsumerKey();
+            username = authContext.getUsername();
+            applicationName = authContext.getApplicationName();
+            applicationId = authContext.getApplicationId();
         }
 
         String context = (String) messageContext.getProperty(RESTConstants.REST_API_CONTEXT);
@@ -563,6 +601,12 @@ public class APIAuthenticationHandler extends AbstractHandler implements Managed
         return resource;
     }
 
+    /**
+     * To get the API Identifier of the current API.
+     *
+     * @param messageContext Current message context.
+     * @return API Identifier of currently accessed API.
+     */
     private APIIdentifier getAPIIdentifier(MessageContext messageContext) {
         String apiWithversion = (String) messageContext.getProperty(RESTConstants.SYNAPSE_REST_API);
 
@@ -580,7 +624,7 @@ public class APIAuthenticationHandler extends AbstractHandler implements Managed
 
         String[] splitParts = apiWithversion.split(":");
         String api = splitParts[0];
-        apiWithversion = splitParts[1].substring(1, splitParts[1].length());
+        apiWithversion = splitParts[1].substring(1);
         return new APIIdentifier(apiPublisher, api, apiWithversion);
     }
 

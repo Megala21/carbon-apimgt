@@ -110,8 +110,12 @@ public class CertificateMgtUtils {
                             log.debug("Provided certificate is expired.");
                         }
                     } else {
+                        String uniqueIdentifier =
+                                ((X509Certificate) certificate).getSerialNumber() + "_" + ((X509Certificate) certificate).getIssuerDN();
+                        APIUtil.addUpdatedCertificates(uniqueIdentifier);
                         //If not expired add the certificate to trust store.
                         trustStore.setCertificateEntry(alias, certificate);
+
                     }
                 }
             }
@@ -143,6 +147,13 @@ public class CertificateMgtUtils {
         return responseCode;
     }
 
+    /**
+     * To validate the current certificate and alias.
+     *
+     * @param alias       Alias of the certificate.
+     * @param certificate Bas64 endcoded certificated.
+     * @return response code based on the validation
+     */
     public ResponseCode validateCertificate(String alias, String certificate) {
         File trustStoreFile = new File(TRUST_STORE);
         ResponseCode responseCode = ResponseCode.SUCCESS;
@@ -173,18 +184,20 @@ public class CertificateMgtUtils {
                 }
             }
         } catch (IOException e) {
-            log.error("I/O Exception while trying to load trust store while trying to check whether alias " + alias + " exists", e);
+            log.error("I/O Exception while trying to load trust store while trying to check whether alias " + alias
+                    + " exists", e);
             responseCode = ResponseCode.INTERNAL_SERVER_ERROR;
         } catch (CertificateException e) {
-            log.error("Certificate Exception while trying to load trust store while trying to check whether alias " + alias + " exists", e);
+            log.error("Certificate Exception while trying to load trust store while trying to check whether alias "
+                    + alias + " exists", e);
             responseCode = ResponseCode.INTERNAL_SERVER_ERROR;
         } catch (NoSuchAlgorithmException e) {
             log.error("No Such Algorithm Exception while trying to load trust store while trying to check whether "
                     + "alias " + alias + " exists", e);
             responseCode = ResponseCode.INTERNAL_SERVER_ERROR;
         } catch (KeyStoreException e) {
-            log.error("KeyStore Exception while trying to load trust store while trying to check whether " + "alias "
-                    + alias + " exists", e);
+            log.error("KeyStore Exception while trying to load trust store while trying to check whether alias " + alias
+                    + " exists", e);
             responseCode = ResponseCode.INTERNAL_SERVER_ERROR;
         } finally {
             closeStreams(serverCert);
@@ -392,18 +405,23 @@ public class CertificateMgtUtils {
         }
     }
 
+    /**
+     * To get the unique identifier(serialnumber_issuerdn) of the certificate.
+     *
+     * @param certficate Base64 encoded certificate.
+     * @return unique identifier of the certification.
+     */
     public String getUniqueIdentifierOfCertificate(String certficate) {
         byte[] cert = (Base64.decodeBase64(certficate.getBytes(StandardCharsets.UTF_8)));
         ByteArrayInputStream serverCert = new ByteArrayInputStream(cert);
         String uniqueIdentifier = null;
-
-        CertificateFactory cf = null;
         try {
-            cf = CertificateFactory.getInstance("X.509");
+            CertificateFactory cf = CertificateFactory.getInstance("X.509");
             while (serverCert.available() > 0) {
                 Certificate generatedCertificate = cf.generateCertificate(serverCert);
                 X509Certificate x509Certificate = (X509Certificate) generatedCertificate;
-                uniqueIdentifier = String.valueOf(x509Certificate.getSerialNumber() + "_" + x509Certificate.getIssuerDN());
+                uniqueIdentifier = String
+                        .valueOf(x509Certificate.getSerialNumber() + "_" + x509Certificate.getIssuerDN());
             }
         } catch (CertificateException e) {
             log.error("Error while getting serial number of the certificate.", e);
@@ -411,6 +429,5 @@ public class CertificateMgtUtils {
             closeStreams(serverCert);
         }
         return uniqueIdentifier;
-
     }
 }

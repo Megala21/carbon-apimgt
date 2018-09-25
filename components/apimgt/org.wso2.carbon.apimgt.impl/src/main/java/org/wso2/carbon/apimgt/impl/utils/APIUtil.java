@@ -259,7 +259,8 @@ public final class APIUtil {
     public static final String HOST_NAME_VERIFIER = "httpclient.hostnameVerifier";
     public static String multiGrpAppSharing = null;
 
-
+    private static final String SYNCHRONIZE_CERTIFICATE = "synchronizeCertificate";
+    private static List<String> updatedCertificates = new ArrayList<>();
     //Need tenantIdleTime to check whether the tenant is in idle state in loadTenantConfig method
     static {
         tenantIdleTimeMillis =
@@ -282,6 +283,23 @@ public final class APIUtil {
         isPublisherRoleCacheEnabled = isPublisherRoleCacheEnabledConfiguration == null || Boolean
                 .parseBoolean(isPublisherRoleCacheEnabledConfiguration);
     }
+
+
+    public static void addUpdatedCertificates(String uniqueIdentifier) {
+        synchronized (SYNCHRONIZE_CERTIFICATE) {
+            updatedCertificates.add(uniqueIdentifier);
+        }
+    }
+
+    public static List<String> getUpdatedCertificates() {
+        List<String> updatedList;
+        synchronized (SYNCHRONIZE_CERTIFICATE) {
+            updatedList = updatedCertificates;
+            updatedCertificates.clear();
+        }
+        return updatedList;
+    }
+
 
     /**
      * This method used to get API from governance artifact

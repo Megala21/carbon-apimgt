@@ -127,6 +127,14 @@ public class APIKeyValidatorClient {
         }
     }
 
+    /**
+     * To get the certificate tier information related with the certificate and API.
+     *
+     * @param apiIdentifier         API Identifier.
+     * @param certificateIdentifier Certificate Identifier.
+     * @return Relevant tier information related with the certificate.
+     * @throws APISecurityException API Security Exception.
+     */
     public CertificateTierDTO getCertificateTierInformation(APIIdentifier apiIdentifier,
             String certificateIdentifier) throws APISecurityException {
         CarbonUtils.setBasicAccessSecurityHeaders(username, password, keyValidationServiceStub._getServiceClient());
@@ -169,6 +177,12 @@ public class APIKeyValidatorClient {
         }
     }
 
+    /**
+     * To convert the {@link APIIdentifier} to {@link org.wso2.carbon.apimgt.api.model.xsd.APIIdentifier}
+     *
+     * @param apiIdentifier Instance of {@link APIIdentifier}
+     * @return converted object.
+     */
     private org.wso2.carbon.apimgt.api.model.xsd.APIIdentifier toXSD(APIIdentifier apiIdentifier) {
         org.wso2.carbon.apimgt.api.model.xsd.APIIdentifier xsdAPIIdentifier =
                 new org.wso2.carbon.apimgt.api.model.xsd.APIIdentifier();
@@ -178,6 +192,12 @@ public class APIKeyValidatorClient {
         return xsdAPIIdentifier;
     }
 
+    /**
+     * To convert the {@link org.wso2.carbon.apimgt.impl.dto.xsd.CertificateTierDTO} to {@link CertificateTierDTO}
+     *
+     * @param generatedDto Instance of {@link CertificateTierDTO}
+     * @return converted certificatetierdto.
+     */
     private CertificateTierDTO toDTO(
             org.wso2.carbon.apimgt.impl.dto.xsd.CertificateTierDTO generatedDto) {
         CertificateTierDTO certificateTierDTO = new CertificateTierDTO();

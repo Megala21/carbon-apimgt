@@ -57,11 +57,11 @@ public class OAuthAuthenticator implements Authenticator {
     private String consumerKeyHeaderSegment = "Bearer";
     private String oauthHeaderSplitter = ",";
     private String consumerKeySegmentDelimiter = " ";
-    protected String securityContextHeader;
+    private String securityContextHeader;
     private boolean removeOAuthHeadersFromOutMessage=true;
     private boolean removeDefaultAPIHeaderFromOutMessage=true;
     private String clientDomainHeader = "referer";
-    protected String requestOrigin;
+    private String requestOrigin;
 
     public OAuthAuthenticator() {
     }

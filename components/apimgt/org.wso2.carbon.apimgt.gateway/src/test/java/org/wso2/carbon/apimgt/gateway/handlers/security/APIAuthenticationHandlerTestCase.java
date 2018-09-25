@@ -50,8 +50,7 @@ import java.util.TreeMap;
 * Test class for APIAuthenticationhandler
 * */
 @RunWith(PowerMockRunner.class)
-@PrepareForTest({Util.class, MetricManager.class, Timer.Context.class, APIUtil.class,
-        ServiceReferenceHolder.class })
+@PrepareForTest({Util.class, MetricManager.class, Timer.Context.class, APIUtil.class, ServiceReferenceHolder.class })
 public class APIAuthenticationHandlerTestCase {
     private Timer.Context context;
     private SynapseEnvironment synapseEnvironment;
@@ -72,8 +71,8 @@ public class APIAuthenticationHandlerTestCase {
         PowerMockito.mockStatic(ServiceReferenceHolder.class);
         ServiceReferenceHolder serviceReferenceHolder = Mockito.mock(ServiceReferenceHolder.class);
         PowerMockito.when(ServiceReferenceHolder.getInstance()).thenReturn(serviceReferenceHolder);
-        APIManagerConfigurationService apiManagerConfigurationService =
-                Mockito.mock(APIManagerConfigurationService.class);
+        APIManagerConfigurationService apiManagerConfigurationService = Mockito
+                .mock(APIManagerConfigurationService.class);
         serviceReferenceHolder.setAPIManagerConfigurationService(apiManagerConfigurationService);
         context = Mockito.mock(Timer.Context.class);
     }
@@ -101,6 +100,15 @@ public class APIAuthenticationHandlerTestCase {
         Assert.assertTrue(apiAuthenticationHandler.handleRequest(messageContext));
     }
 
+    /**
+     * This method mocks API Key validator with required values.
+     *
+     * @param apiAuthenticationHandler Relevant API Authentication Handler which the key validator need to be mocked
+     *                                 against.
+     * @throws NoSuchFieldException   No Such Field Exception.
+     * @throws IllegalAccessException Illegal Access Exception.
+     * @throws APISecurityException   API Security Exception.
+     */
     private void mockAPIKeyValidator(APIAuthenticationHandler apiAuthenticationHandler)
             throws NoSuchFieldException, IllegalAccessException, APISecurityException {
         APIKeyValidator apiKeyValidator = Mockito.mock(APIKeyValidator.class);
@@ -109,9 +117,11 @@ public class APIAuthenticationHandlerTestCase {
         keyValidatorField.set(apiAuthenticationHandler, apiKeyValidator);
         keyValidatorField.setAccessible(false);
         apiAuthenticationHandler.init(synapseEnvironment);
-        Mockito.doReturn(APIConstants.AUTH_APPLICATION_USER_LEVEL_TOKEN).when(apiKeyValidator).getResourceAuthenticationScheme(Mockito.any(MessageContext.class));
+        Mockito.doReturn(APIConstants.AUTH_APPLICATION_USER_LEVEL_TOKEN).when(apiKeyValidator)
+                .getResourceAuthenticationScheme(Mockito.any(MessageContext.class));
 
     }
+
     /*
     *  This method will test Response method
     * */

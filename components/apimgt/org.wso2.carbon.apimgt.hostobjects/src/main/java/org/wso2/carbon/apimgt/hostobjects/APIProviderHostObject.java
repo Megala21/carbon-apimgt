@@ -51,7 +51,13 @@ import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
-import org.mozilla.javascript.*;
+import org.mozilla.javascript.ConsString;
+import org.mozilla.javascript.Context;
+import org.mozilla.javascript.Function;
+import org.mozilla.javascript.NativeArray;
+import org.mozilla.javascript.NativeObject;
+import org.mozilla.javascript.Scriptable;
+import org.mozilla.javascript.ScriptableObject;
 import org.wso2.carbon.CarbonConstants;
 import org.wso2.carbon.apimgt.api.APIDefinition;
 import org.wso2.carbon.apimgt.api.APIManagementException;
@@ -87,6 +93,7 @@ import org.wso2.carbon.apimgt.impl.APIManagerConfiguration;
 import org.wso2.carbon.apimgt.impl.APIManagerFactory;
 import org.wso2.carbon.apimgt.impl.UserAwareAPIProvider;
 import org.wso2.carbon.apimgt.impl.certificatemgt.CertificateManager;
+import org.wso2.carbon.apimgt.impl.certificatemgt.CertificateManagerFactory;
 import org.wso2.carbon.apimgt.impl.certificatemgt.CertificateManagerImpl;
 import org.wso2.carbon.apimgt.impl.certificatemgt.ResponseCode;
 import org.wso2.carbon.apimgt.impl.definitions.APIDefinitionFromOpenAPISpec;
@@ -426,11 +433,11 @@ public class APIProviderHostObject extends ScriptableObject {
             properties = (JSONObject) parser.parse(additionalProperties);
         }
         String authorizationHeader = (String) apiData.get("authorizationHeader", apiData);
-        String gatewaySecurity = APIConstants.DEFAULT_GATEWAY_SECURITY_OAUTH2;
-        Object gatewaySecurityObject = apiData.get("gatewaySecurity", apiData);
+        String apiSecurity = APIConstants.DEFAULT_API_SECURITY_OAUTH2;
+        Object apiSecurityObject = apiData.get("apiSecurity", apiData);
 
-        if (gatewaySecurityObject instanceof String || gatewaySecurityObject instanceof ConsString) {
-            gatewaySecurity = String.valueOf(apiData.get("gatewaySecurity", apiData));
+        if (apiSecurityObject instanceof String || apiSecurityObject instanceof ConsString) {
+            apiSecurity = String.valueOf(apiSecurityObject);
         }
         int cacheTimeOut = APIConstants.API_RESPONSE_CACHE_TIMEOUT;
         if (APIConstants.ENABLED.equalsIgnoreCase(responseCache)) {
@@ -518,7 +525,7 @@ public class APIProviderHostObject extends ScriptableObject {
         }
         api.setAdditionalProperties(properties);
         api.setAuthorizationHeader(authorizationHeader);
-        api.setApiSecurity(gatewaySecurity);
+        api.setApiSecurity(apiSecurity);
 
         Set<Tier> availableTier = new HashSet<Tier>();
         String[] tierNames;
@@ -5221,9 +5228,7 @@ public class APIProviderHostObject extends ScriptableObject {
         String alias = (String) args[4];
         String certificate = (String) args[5];
         String tierName = (String) args[6];
-
         APIProvider apiProvider = getAPIProvider(thisObj);
-
         APIIdentifier apiIdentifier = new APIIdentifier(APIUtil.replaceEmailDomain(provider), apiName, version);
         return apiProvider.addClientCertificate(userName, apiIdentifier, certificate, alias, tierName);
     }
@@ -5275,7 +5280,6 @@ public class APIProviderHostObject extends ScriptableObject {
         String apiName = (String) args[2];
         String apiVersion = (String) args[3];
         String providerName = (String) args[4];
-
         APIProvider apiProvider = getAPIProvider(thisObj);
         return apiProvider
                 .deleteClientCertificate(userName, new APIIdentifier(providerName, apiName, apiVersion), alias);
@@ -5322,37 +5326,42 @@ public class APIProviderHostObject extends ScriptableObject {
         return certificateMetaDataArray;
     }
 
+    /**
+     * To get the client certificates related with an API.
+     *
+     * @param cx      Context.
+     * @param thisObj Scriptable object
+     * @param args    Arguments.
+     * @param funObj  Function object.
+     * @return Array of certificates uploaded against API.
+     * @throws APIManagementException API Management Exception.
+     */
     public static NativeArray jsFunction_getClientCertificates(Context cx, Scriptable thisObj, Object[] args,
-            Function funObj)
-            throws APIManagementException {
-        NativeArray clientCertificateMetaData = new NativeArray(0);
-
-        NativeObject certificateMetaData = new NativeObject();
-        CertificateManager certificateManager = new CertificateManagerImpl();
+            Function funObj) throws APIManagementException {
         if ((args == null) || (args.length != 4) || !isStringValues(args)) {
             log.error("Invalid arguments. Expect User Name and Endpoint");
             return null;
         }
-
         String userName = (String) args[0];
         String apiName = (String) args[1];
         String provider = (String) args[2];
-        String apiVersion = (String)args[3];
-
+        String apiVersion = (String) args[3];
+        NativeArray clientCertificateMetaData = new NativeArray(0);
+        NativeObject certificateMetaData = new NativeObject();
         APIProvider apiProvider = getAPIProvider(thisObj);
         APIIdentifier apiIdentifier = new APIIdentifier(APIUtil.replaceEmailDomain(provider), apiName, apiVersion);
-        List<ClientCertificateDTO> clientCertificateDTOList = apiProvider.getClientCertificates(userName, apiIdentifier);
-
+        List<ClientCertificateDTO> clientCertificateDTOList = apiProvider
+                .getClientCertificates(userName, apiIdentifier);
         String tenantDomain = MultitenantUtils.getTenantDomain(userName);
-        int i = 0;
 
+        int index = 0;
         if (clientCertificateDTOList != null) {
             for (ClientCertificateDTO clientCertificateDTO : clientCertificateDTOList) {
                 NativeObject obj = new NativeObject();
                 obj.put(ALIAS, obj, clientCertificateDTO.getAlias());
                 obj.put(TIER, obj, clientCertificateDTO.getTierName());
-                clientCertificateMetaData.put(i, clientCertificateMetaData, obj);
-                i++;
+                clientCertificateMetaData.put(index, clientCertificateMetaData, obj);
+                index++;
             }
         }
         return clientCertificateMetaData;

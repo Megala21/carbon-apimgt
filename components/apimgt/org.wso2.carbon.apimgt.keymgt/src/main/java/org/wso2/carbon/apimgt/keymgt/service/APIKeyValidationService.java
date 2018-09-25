@@ -338,6 +338,14 @@ public class APIKeyValidationService extends AbstractAdmin {
         return info;
     }
 
+    /**
+     * To get the subscription tier information related with a certificate.
+     *
+     * @param apiIdentifier         Identifier of the API.
+     * @param certificateIdentifier Unique identifier of the certificate.
+     * @return subscription tier information of the certificate.
+     * @throws APIKeyMgtException API Key Mgt Exception.
+     */
     public CertificateTierDTO getCertificateTierInformation(APIIdentifier apiIdentifier, String certificateIdentifier)
             throws APIKeyMgtException {
         try {

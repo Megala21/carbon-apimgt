@@ -373,44 +373,37 @@ public class APIKeyValidationServiceImpl extends AbstractAdmin
         return thriftKeyValidationInfoDTO;
     }
 
+    @Override
     public CertificateTierDTO getCertificateTierInformation(APIIdentifier apiIdentifier,
             String certificateIdentifier, String sessionId) throws
             org.wso2.carbon.apimgt.impl.generated.thrift.APIKeyMgtException, TException {
         CertificateTierDTO certificateTierDTO;
         try {
             if (thriftAuthenticatorService != null && apiKeyValidationService != null) {
-
                 if (thriftAuthenticatorService.isAuthenticated(sessionId)) {
-
                     //obtain the thrift session for this session id
                     ThriftSession currentSession = thriftAuthenticatorService.getSessionInfo(sessionId);
-
                     //obtain a dummy carbon context holder
                     PrivilegedCarbonContext carbonContextHolder = PrivilegedCarbonContext.getThreadLocalCarbonContext();
                     int tenantId = PrivilegedCarbonContext.getThreadLocalCarbonContext().getTenantId();
                     String tenantDomain = PrivilegedCarbonContext.getThreadLocalCarbonContext().getTenantDomain();
-
-                    //start tenant flow to stack up any existing carbon context holder base,
-                    //and initialize a raw one
-                    PrivilegedCarbonContext.startTenantFlow();
-                    if (tenantDomain == null) {
-                        PrivilegedCarbonContext.getThreadLocalCarbonContext()
-                                .setTenantDomain(MultitenantConstants.SUPER_TENANT_DOMAIN_NAME, true);
-                        PrivilegedCarbonContext.getThreadLocalCarbonContext()
-                                .setTenantId(MultitenantConstants.SUPER_TENANT_ID);
-                    } else {
-                        PrivilegedCarbonContext.getThreadLocalCarbonContext().setTenantDomain(tenantDomain);
-                        PrivilegedCarbonContext.getThreadLocalCarbonContext().setTenantId(tenantId);
-                    }
-
                     try {
-
-                        // need to populate current carbon context from the one created at
-                        // authentication
+                        //start tenant flow to stack up any existing carbon context holder base, and initialize a raw one
+                        PrivilegedCarbonContext.startTenantFlow();
+                        if (tenantDomain == null) {
+                            PrivilegedCarbonContext.getThreadLocalCarbonContext()
+                                    .setTenantDomain(MultitenantConstants.SUPER_TENANT_DOMAIN_NAME, true);
+                            PrivilegedCarbonContext.getThreadLocalCarbonContext()
+                                    .setTenantId(MultitenantConstants.SUPER_TENANT_ID);
+                        } else {
+                            PrivilegedCarbonContext.getThreadLocalCarbonContext().setTenantDomain(tenantDomain);
+                            PrivilegedCarbonContext.getThreadLocalCarbonContext().setTenantId(tenantId);
+                        }
+                        // need to populate current carbon context from the one created at authentication
                         populateCurrentCarbonContextFromAuthSession(carbonContextHolder, currentSession);
-                        org.wso2.carbon.apimgt.api.model.APIIdentifier xsdAPIIdentifier = new org.wso2.carbon.apimgt.api.model.APIIdentifier(
-                                apiIdentifier.getProviderName(), apiIdentifier.getApiName(),
-                                apiIdentifier.getVersion());
+                        org.wso2.carbon.apimgt.api.model.APIIdentifier xsdAPIIdentifier =
+                                new org.wso2.carbon.apimgt.api.model.APIIdentifier(apiIdentifier.getProviderName(),
+                                        apiIdentifier.getApiName(), apiIdentifier.getVersion());
                         org.wso2.carbon.apimgt.impl.dto.CertificateTierDTO certificateTierInformation = apiKeyValidationService
                                 .getCertificateTierInformation(xsdAPIIdentifier, certificateIdentifier);
                         certificateTierDTO = new CertificateTierDTO();
@@ -421,7 +414,6 @@ public class APIKeyValidationServiceImpl extends AbstractAdmin
                     } finally {
                         PrivilegedCarbonContext.endTenantFlow();
                     }
-
                 } else {
                     String authErrorMsg = "Invalid session id for thrift authenticator.";
                     log.warn(authErrorMsg);
@@ -435,8 +427,11 @@ public class APIKeyValidationServiceImpl extends AbstractAdmin
             }
 
         } catch (APIKeyMgtException e) {
-            log.error("Error in invoking validate key via thrift..");
-            throw new org.wso2.carbon.apimgt.impl.generated.thrift.APIKeyMgtException(e.getMessage());
+            String errorMessage = "Error while getting subscription tier information related with a certificate via "
+                    + "thrift for the API " + apiIdentifier.toString();
+            log.error(errorMessage);
+            throw new org.wso2.carbon.apimgt.impl.generated.thrift.APIKeyMgtException(
+                    errorMessage + ": " + e.getMessage());
         }
         return certificateTierDTO;
     }
