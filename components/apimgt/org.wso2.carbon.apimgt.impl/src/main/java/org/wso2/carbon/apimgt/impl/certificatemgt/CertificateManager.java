@@ -96,12 +96,30 @@ public interface CertificateManager {
     boolean addCertificateToGateway(String certificate, String alias);
 
     /**
+     * Method to add client certificate to gateway nodes.
+     *
+     * @param certificate : The Base64 encoded certificate string.
+     * @param alias       : Certificate alias.
+     * @return : True if the certificate is added to gateway node successfully. False otherwise.
+     */
+    boolean addClientCertificateToGateway(String certificate, String alias);
+
+
+    /**
      * This method is to remove the certificate from client-truststore.jks of gateway nodes.
      *
      * @param alias : The alias of the certificate to be removed.
      * @return : True if the certificate is removed successfully, false otherwise.
      */
     boolean deleteCertificateFromGateway(String alias);
+
+    /**
+     * This method is to remove the client certificate from client-truststore.jks of gateway nodes.
+     *
+     * @param alias : The alias of the certificate to be removed.
+     * @return : True if the certificate is removed successfully, false otherwise.
+     */
+    boolean deleteClientCertificateFromGateway(String alias);
 
     /**
      * This method is to check whether the API-Manager is configured for Certificate Management feature.

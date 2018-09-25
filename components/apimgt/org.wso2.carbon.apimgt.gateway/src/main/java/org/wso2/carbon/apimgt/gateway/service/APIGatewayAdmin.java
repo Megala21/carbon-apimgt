@@ -26,12 +26,14 @@ import org.apache.commons.logging.LogFactory;
 import org.wso2.carbon.apimgt.api.APIManagementException;
 import org.wso2.carbon.apimgt.gateway.utils.EndpointAdminServiceClient;
 import org.wso2.carbon.apimgt.impl.certificatemgt.CertificateManager;
+import org.wso2.carbon.apimgt.impl.certificatemgt.CertificateManagerFactory;
 import org.wso2.carbon.apimgt.impl.certificatemgt.CertificateManagerImpl;
 import org.wso2.carbon.apimgt.gateway.utils.GatewayUtils;
 import org.wso2.carbon.apimgt.gateway.utils.MediationSecurityAdminServiceClient;
 import org.wso2.carbon.apimgt.gateway.utils.RESTAPIAdminClient;
 import org.wso2.carbon.apimgt.gateway.utils.SequenceAdminServiceClient;
 import org.wso2.carbon.apimgt.impl.APIConstants;
+import org.wso2.carbon.context.PrivilegedCarbonContext;
 import org.wso2.carbon.rest.api.stub.types.carbon.APIData;
 import org.wso2.carbon.utils.multitenancy.MultitenantConstants;
 
@@ -553,6 +555,21 @@ public class APIGatewayAdmin extends org.wso2.carbon.core.AbstractAdmin {
     }
 
     /**
+     * Imports the given certificate to the trust store.
+     *
+     * @param certificate : The client certificate that needs to be added.
+     * @param alias : The alias for the certificate.
+     * */
+    public boolean addClientCertificate(String certificate, String alias) {
+        CertificateManager certificateManager = new CertificateManagerImpl();
+        int tenantId = PrivilegedCarbonContext.getThreadLocalCarbonContext().getTenantId();
+        if (!alias.endsWith("_" + tenantId)) {
+            alias = "_" + tenantId;
+        }
+        return certificateManager.addClientCertificateToGateway(certificate, alias);
+    }
+
+    /**
      * Removes the certificate for the given alias from the trust store.
      *
      * @param alias : Alias of the certificate that needs to be removed.
@@ -560,5 +577,20 @@ public class APIGatewayAdmin extends org.wso2.carbon.core.AbstractAdmin {
     public boolean deleteCertificate(String alias) {
         CertificateManager certificateManager = new CertificateManagerImpl();
         return certificateManager.deleteCertificateFromGateway(alias);
+    }
+
+    /**
+     * Removes the certificate for the given alias from the trust store.
+     *
+     * @param alias : Alias of the certificate that needs to be removed.
+     * */
+    public boolean deleteClientCertificate(String alias) {
+        int tenantId = PrivilegedCarbonContext.getThreadLocalCarbonContext().getTenantId();
+        if (alias.endsWith("_" + tenantId)) {
+            CertificateManager certificateManager = CertificateManagerFactory.getCertificateManagerInstance();
+            return certificateManager.deleteClientCertificateFromGateway(alias);
+        }
+        log.warn("Attempt made to delete an alias " + alias + " from different tenant has been failed.");
+        return false;
     }
 }

@@ -2885,7 +2885,7 @@ public class SQLConstants {
 
     public static class ClientCertificateConstants{
         public static final String INSERT_CERTIFICATE = "INSERT INTO AM_API_CLIENT_CERTIFICATE " +
-                "(CERTIFICATE, TENANT_ID, ALIAS, API_ID, UNIQUE_IDENTIFIER, TIER_NAME) VALUES(?, ?, ?, ?, ?, ?)";
+                "(CERTIFICATE, TENANT_ID, ALIAS, API_ID, UNIQUE_ID, TIER_NAME) VALUES(?, ?, ?, ?, ?, ?)";
 
         public static final String GET_CERTIFICATES_FOR_API = "SELECT * FROM AM_API_CLIENT_CERTIFICATE WHERE "
                 + "TENANT_ID=? and API_ID=? and REMOVED=?";
@@ -2902,7 +2902,7 @@ public class SQLConstants {
                 + "WHERE TENANT_ID=? AND ALIAS=? AND API_ID=?";
 
         public static final String SELECT_CERTIFICATE_TIER = "SELECT TIER_NAME FROM AM_API_CLIENT_CERTIFICATE WHERE "
-                + "API_ID=? AND UNIQUE_IDENTIFIER=?";
+                + "API_ID=? AND UNIQUE_ID=?";
 
         public static final String SELECT_CERTIFICATE_TIER_ADVANCED = "SELECT "
                 + "CER.TIER_NAME, "
@@ -2911,7 +2911,7 @@ public class SQLConstants {
                 + "PS.STOP_ON_QUOTA_REACH FROM "
                 + "AM_API_CLIENT_CERTIFICATE CER,"
                 + "AM_POLICY_SUBSCRIPTION PS "
-                + "WHERE API_ID=? AND UNIQUE_IDENTIFIER=? AND PS.NAME = CER.TIER_NAME AND PS.TENANT_ID=CER.TENANT_ID";
+                + "WHERE API_ID=? AND UNIQUE_ID=? AND PS.NAME = CER.TIER_NAME AND PS.TENANT_ID=CER.TENANT_ID";
 
         public static final String VERIFY_TABLE = "SELECT ALIAS from AM_API_CLIENT_CERTIFICATE";
     }

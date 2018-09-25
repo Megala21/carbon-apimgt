@@ -158,7 +158,7 @@ public class CertificateMgtDAO {
             preparedStatement = connection.prepareStatement(addCertQuery);
             preparedStatement.setBlob(1, getInputStream(certificate));
             preparedStatement.setInt(2, tenantId);
-            preparedStatement.setString(3, alias);
+            preparedStatement.setString(3, alias + "_" + tenantId);
             preparedStatement.setInt(4, apiId);
             preparedStatement.setString(5, certificateMgtUtils.getUniqueIdentifierOfCertificate(certificate));
             preparedStatement.setString(6, tierName);
@@ -484,9 +484,10 @@ public class CertificateMgtDAO {
             while (resultSet.next()) {
                 Blob blob = resultSet.getBlob("CERTIFICATE");
                 ClientCertificateDTO clientCertificateDTO = new ClientCertificateDTO();
-                clientCertificateDTO.setAlias(resultSet.getString("ALIAS"));
+                String alias = resultSet.getString("ALIAS");
+                clientCertificateDTO.setAlias(resultSet.getString("ALIAS").substring(0, alias.lastIndexOf("_")));
                 clientCertificateDTO.setCertificate(new String(blob.getBytes(1L, (int) blob.length())));
-                clientCertificateDTO.setUniqueId(resultSet.getString("UNIQUE_IDENTIFIER"));
+                clientCertificateDTO.setUniqueId(resultSet.getString("UNIQUE_ID"));
                 clientCertificateDTO.setTierName(resultSet.getString("TIER_NAME"));
                 clientCertificateDTOList.add(clientCertificateDTO);
             }
@@ -566,14 +567,14 @@ public class CertificateMgtDAO {
             preparedStatement.setInt(1, tenantId);
             preparedStatement.setInt(2, apiId);
             preparedStatement.setBoolean(3, true);
-            preparedStatement.setString(4, alias);
+            preparedStatement.setString(4, alias + "_" + tenantId);
             preparedStatement.executeUpdate();
 
             deleteCertQuery = SQLConstants.ClientCertificateConstants.DELETE_CERTIFICATES;
             preparedStatement = connection.prepareStatement(deleteCertQuery);
             preparedStatement.setBoolean(1, true);
             preparedStatement.setInt(2, tenantId);
-            preparedStatement.setString(3, alias);
+            preparedStatement.setString(3, alias + "_" + tenantId);
             preparedStatement.setInt(4, apiId);
             result = preparedStatement.executeUpdate() == 1;
             connection.commit();

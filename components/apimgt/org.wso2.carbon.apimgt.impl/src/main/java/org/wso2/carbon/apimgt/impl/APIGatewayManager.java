@@ -307,6 +307,9 @@ public class APIGatewayManager {
                 } catch (EndpointAdminException ex) {
                     log.error("Error occurred when deleting endpoint from gateway" + environmentName, ex);
                     failedEnvironmentsMap.put(environmentName, ex.getMessage());
+                } catch (CertificateManagementException | APIManagementException ex) {
+                    log.error("Error occurred when deleting certificate from gateway" + environmentName, ex);
+                    failedEnvironmentsMap.put(environmentName, ex.getMessage());
                 }
             }
             updateRemovedClientCertificates(api, tenantDomain);
@@ -558,11 +561,13 @@ public class APIGatewayManager {
      */
     private void deployClientCertificates(APIGatewayAdminClient client, API api, String tenantDomain)
             throws CertificateManagementException, AxisFault {
+        int tenantId = APIUtil.getTenantIdFromTenantDomain(tenantDomain);
         List<ClientCertificateDTO> clientCertificateDTOList = CertificateMgtDAO.getInstance()
-                .getClientCertificates(api.getId(), getTenantId(tenantDomain));
+                .getClientCertificates(api.getId(), tenantId);
         if (clientCertificateDTOList != null) {
             for (ClientCertificateDTO clientCertificateDTO : clientCertificateDTOList) {
-                client.addCertificate(clientCertificateDTO.getCertificate(), clientCertificateDTO.getAlias());
+                client.addClientCertificate(clientCertificateDTO.getCertificate(), clientCertificateDTO.getAlias() +
+                        "_" + tenantId);
             }
         }
     }
@@ -581,13 +586,14 @@ public class APIGatewayManager {
                 .getDeletedClientCertificates(api.getId(), tenantId);
         if (clientCertificateDTOList != null) {
             for (ClientCertificateDTO clientCertificateDTO : clientCertificateDTOList) {
-                client.deleteCertificate(clientCertificateDTO.getAlias());
+                client.deleteClientCertificate(clientCertificateDTO.getAlias());
             }
         }
         clientCertificateDTOList = CertificateMgtDAO.getInstance().getClientCertificates(api.getId(), tenantId);
         if (clientCertificateDTOList != null) {
             for (ClientCertificateDTO clientCertificateDTO : clientCertificateDTOList) {
-                client.addCertificate(clientCertificateDTO.getCertificate(), clientCertificateDTO.getAlias());
+                client.addClientCertificate(clientCertificateDTO.getCertificate(),
+                        clientCertificateDTO.getAlias() + "_" + tenantId);
             }
         }
     }
@@ -652,13 +658,13 @@ public class APIGatewayManager {
                 .getClientCertificates(api.getId(), tenantId);
         if (clientCertificateDTOList != null) {
             for (ClientCertificateDTO clientCertificateDTO : clientCertificateDTOList) {
-                client.deleteCertificate(clientCertificateDTO.getAlias());
+                client.deleteClientCertificate(clientCertificateDTO.getAlias() + "_" + tenantId);
             }
         }
         clientCertificateDTOList = CertificateMgtDAO.getInstance().getDeletedClientCertificates(api.getId(), tenantId);
         if (clientCertificateDTOList != null) {
             for (ClientCertificateDTO clientCertificateDTO : clientCertificateDTOList) {
-                client.deleteCertificate(clientCertificateDTO.getAlias());
+                client.deleteClientCertificate(clientCertificateDTO.getAlias());
             }
         }
     }

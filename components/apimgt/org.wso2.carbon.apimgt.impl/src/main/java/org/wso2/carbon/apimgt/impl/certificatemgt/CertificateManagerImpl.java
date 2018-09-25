@@ -28,7 +28,6 @@ import org.wso2.carbon.apimgt.impl.certificatemgt.exceptions.CertificateAliasExi
 import org.wso2.carbon.apimgt.impl.certificatemgt.exceptions.CertificateManagementException;
 import org.wso2.carbon.apimgt.impl.dao.CertificateMgtDAO;
 import org.wso2.carbon.apimgt.impl.utils.CertificateMgtUtils;
-import org.wso2.carbon.context.PrivilegedCarbonContext;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -92,8 +91,8 @@ public class CertificateManagerImpl implements CertificateManager {
             String tierName, int tenantId) {
         ResponseCode responseCode;
         try {
-            responseCode = certificateMgtUtils.validateCertificate(alias, certificate);
-            if (certificateMgtDAO.checkWhetherAliasExist(alias)) {
+            responseCode = certificateMgtUtils.validateCertificate(alias + "_" + tenantId, certificate);
+            if (certificateMgtDAO.checkWhetherAliasExist(alias + "_" + tenantId)) {
                 responseCode = ResponseCode.ALIAS_EXISTS_IN_TRUST_STORE;
             }
             if (responseCode == ResponseCode.SUCCESS) {
@@ -157,6 +156,18 @@ public class CertificateManagerImpl implements CertificateManager {
     @Override
     public boolean addCertificateToGateway(String certificate, String alias) {
 
+        return addCertificateToListenerOrSenderProfile(certificate, alias, false);
+    }
+
+
+    @Override
+    public boolean addClientCertificateToGateway(String certificate, String alias) {
+
+        return addCertificateToListenerOrSenderProfile(certificate, alias, true);
+    }
+
+
+    private  boolean addCertificateToListenerOrSenderProfile(String certificate, String alias, boolean isListener) {
         boolean result;
         ResponseCode responseCode = certificateMgtUtils.addCertificateToTrustStore(certificate, alias);
         if (responseCode == ResponseCode.ALIAS_EXISTS_IN_TRUST_STORE) {
@@ -165,7 +176,13 @@ public class CertificateManagerImpl implements CertificateManager {
         } else {
             result = responseCode != ResponseCode.INTERNAL_SERVER_ERROR;
         }
-        result = result && touchConfigFile();
+        boolean fileUpdateSucceed = false;
+        if (isListener) {
+            fileUpdateSucceed = touchSSLListenerConfigFile();
+        } else {
+            fileUpdateSucceed = touchSSLSenderConfigFile();
+        }
+        result = result && fileUpdateSucceed;
         if (result) {
             log.info("The certificate with Alias '" + alias + "' is successfully added to the Gateway " +
                     "Trust Store.");
@@ -177,17 +194,35 @@ public class CertificateManagerImpl implements CertificateManager {
 
     @Override
     public boolean deleteCertificateFromGateway(String alias) {
+        return deleteCertificateFromListenerAndSenderProfiles(alias, false);
+    }
 
+    @Override
+    public boolean deleteClientCertificateFromGateway(String alias) {
+        return deleteCertificateFromListenerAndSenderProfiles(alias, true);
+    }
+
+    /**
+     * To delete the certificate from http listener or sender profile.
+     *
+     * @param alias      Alias that need to be removed.
+     * @param isListener To indicate whether http listener need to be updated or sender.
+     * @return true if the the update of profile succeeded.
+     */
+    private boolean deleteCertificateFromListenerAndSenderProfiles(String alias, boolean isListener) {
         ResponseCode responseCode = certificateMgtUtils.removeCertificateFromTrustStore(alias);
         if (responseCode != ResponseCode.INTERNAL_SERVER_ERROR) {
-            log.info("The certificate with Alias '" + alias + "' is successfully removed from the Gateway " +
-                    "Trust Store.");
+            log.info("The certificate with Alias '" + alias + "' is successfully removed from the Gateway "
+                    + "Trust Store.");
         } else {
-            log.error("Error removing the certificate with Alias '" + alias + "' from the Gateway " +
-                    "Trust Store.");
+            log.error("Error removing the certificate with Alias '" + alias + "' from the Gateway " + "Trust Store.");
             return false;
         }
-        return touchConfigFile();
+        if (isListener) {
+            return touchSSLListenerConfigFile();
+        } else {
+            return touchSSLSenderConfigFile();
+        }
     }
 
     @Override
@@ -340,7 +375,7 @@ public class CertificateManagerImpl implements CertificateManager {
      *
      * @return : True if the file modification is success.
      */
-    private boolean touchConfigFile() {
+    private boolean touchSSLSenderConfigFile() {
 
         boolean success = false;
         File file = new File(SSL_PROFILE_FILE_PATH);
@@ -360,12 +395,21 @@ public class CertificateManagerImpl implements CertificateManager {
             }
             log.error("Could not find the file '" + PROFILE_CONFIG + "'");
         }
+        return success;
+    }
 
-        boolean successForListener = false;
-        file = new File(LISTENER_PROFILE_FILE_PATH);
+
+    /**
+     * Modify the listenerProfiles.xml file after modifying the certificate.
+     *
+     * @return : True if the file modification is success.
+     */
+    private boolean touchSSLListenerConfigFile() {
+        boolean success = false;
+        File file = new File(LISTENER_PROFILE_FILE_PATH);
         if (file.exists()) {
-            successForListener = file.setLastModified(System.currentTimeMillis());
-            if (successForListener) {
+            success = file.setLastModified(System.currentTimeMillis());
+            if (success) {
                 log.info("The Transport listener will be re-initialized in few minutes.");
             } else {
                 if (log.isDebugEnabled()) {
@@ -374,6 +418,8 @@ public class CertificateManagerImpl implements CertificateManager {
                 log.error("Could not modify the file '" + LISTENER_PROFILE_CONFIG + "'");
             }
         }
-        return success && successForListener;
+        return success;
     }
+
+
 }
