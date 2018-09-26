@@ -18,6 +18,8 @@
 
 package org.wso2.carbon.apimgt.api.dto;
 
+import org.wso2.carbon.apimgt.api.model.APIIdentifier;
+
 /**
  * DTO object to represent client certificate.
  */
@@ -26,6 +28,25 @@ public class ClientCertificateDTO {
     private String certificate;
     private String uniqueId;
     private String tierName;
+    private APIIdentifier apiIdentifier;
+
+    /**
+     * To get the identifier of the API related with client certificate.
+     *
+     * @return API Identifier related with the client certificate.
+     */
+    public APIIdentifier getApiIdentifier() {
+        return apiIdentifier;
+    }
+
+    /**
+     * To set the identifier of the API related with client certificate.
+     *
+     * @param apiIdentifier Identifier of the API.
+     */
+    public void setApiIdentifier(APIIdentifier apiIdentifier) {
+        this.apiIdentifier = apiIdentifier;
+    }
 
     /**
      * To get the unique id of the certificate.

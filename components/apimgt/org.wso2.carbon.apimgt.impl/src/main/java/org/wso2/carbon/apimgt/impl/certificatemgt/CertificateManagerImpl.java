@@ -305,6 +305,12 @@ public class CertificateManagerImpl implements CertificateManager {
     }
 
     @Override
+    public List<ClientCertificateDTO> getClientCertificates(int tenantId, String alias,
+            APIIdentifier apiIdentifier) {
+        return null;
+    }
+
+    @Override
     public boolean isCertificatePresent(int tenantId, String alias) throws APIManagementException {
 
         List<CertificateMetadataDTO> certificateMetadataList;
@@ -319,6 +325,17 @@ public class CertificateManagerImpl implements CertificateManager {
                     "' and alias '" + alias + "'");
         }
         return certificateMetadataList.size() == 1; // The list would not be null so we check the size.
+    }
+
+    @Override
+    public ClientCertificateDTO getClientCertificate(int tenantId, String alias) throws APIManagementException {
+        try {
+            return CertificateMgtDAO.getInstance().getClientCertificate(alias + "_" + tenantId, tenantId);
+        } catch (CertificateManagementException e) {
+            throw new APIManagementException(
+                    "Error while retrieving API related with client certiifcate alias " + alias + " for the tenant "
+                            + tenantId, e);
+        }
     }
 
     @Override
@@ -345,6 +362,24 @@ public class CertificateManagerImpl implements CertificateManager {
     }
 
     @Override
+    public boolean updateClientCertificate(String certificate, String alias, int tenantId) throws APIManagementException {
+        ResponseCode responseCode = certificateMgtUtils.validateCertificate(certificate);
+        boolean isSuccess = false;
+
+        try {
+            if (responseCode.getResponseCode() == ResponseCode.SUCCESS.getResponseCode()) {
+                isSuccess = certificateMgtDAO.updateClientCertificate(certificate, alias + "_" + tenantId, tenantId);
+            }
+        } catch (CertificateManagementException e) {
+            throw new APIManagementException(
+                    "Certificate management exception while trying to update the certificate" + " of alias " + alias
+                            + " of tenant " + tenantId, e);
+        }
+        return isSuccess;
+    }
+
+
+    @Override
     public int getCertificateCount(int tenantId) throws APIManagementException {
 
         if (log.isDebugEnabled()) {
@@ -354,6 +389,17 @@ public class CertificateManagerImpl implements CertificateManager {
             return certificateMgtDAO.getCertificateCount(tenantId);
         } catch (CertificateManagementException e) {
             throw new APIManagementException(e);
+        }
+    }
+
+    @Override
+    public int getClientCertificateCount(int tenantId) throws APIManagementException {
+        try {
+            return certificateMgtDAO.getClientCertificateCount(tenantId);
+        } catch (CertificateManagementException e) {
+            throw new APIManagementException(
+                    "Certificate management exception while getting count of client " + "certificates for the tenant "
+                            + tenantId);
         }
     }
 

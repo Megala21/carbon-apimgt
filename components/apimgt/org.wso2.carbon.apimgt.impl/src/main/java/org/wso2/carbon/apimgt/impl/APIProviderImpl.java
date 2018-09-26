@@ -81,11 +81,7 @@ import org.wso2.carbon.apimgt.impl.certificatemgt.ResponseCode;
 import org.wso2.carbon.apimgt.impl.clients.RegistryCacheInvalidationClient;
 import org.wso2.carbon.apimgt.impl.clients.TierCacheInvalidationClient;
 import org.wso2.carbon.apimgt.impl.dao.ApiMgtDAO;
-import org.wso2.carbon.apimgt.impl.dto.Environment;
-import org.wso2.carbon.apimgt.impl.dto.ThrottleProperties;
-import org.wso2.carbon.apimgt.impl.dto.TierPermissionDTO;
-import org.wso2.carbon.apimgt.impl.dto.WorkflowDTO;
-import org.wso2.carbon.apimgt.impl.dto.WorkflowProperties;
+import org.wso2.carbon.apimgt.impl.dto.*;
 import org.wso2.carbon.apimgt.impl.internal.ServiceReferenceHolder;
 import org.wso2.carbon.apimgt.impl.notification.NotificationDTO;
 import org.wso2.carbon.apimgt.impl.notification.NotificationExecutor;
@@ -5310,11 +5306,22 @@ class APIProviderImpl extends AbstractAPIManager implements APIProvider {
         return certificateManager.getCertificates(tenantId, alias, endpoint);
     }
 
+    public List<ClientCertificateDTO> searchClientCertificates(int tenantId, String alias,
+            APIIdentifier apiIdentifier) throws APIManagementException {
+        return null;
+    }
+
     @Override
     public boolean isCertificatePresent(int tenantId, String alias) throws APIManagementException {
 
         CertificateManager certificateManager = new CertificateManagerImpl();
         return certificateManager.isCertificatePresent(tenantId, alias);
+    }
+
+    @Override
+    public ClientCertificateDTO getClientCertificate(int tenantId, String alias) throws APIManagementException {
+        CertificateManager certificateManager = CertificateManagerFactory.getCertificateManagerInstance();
+        return certificateManager.getClientCertificate(tenantId, alias);
     }
 
     @Override
@@ -5339,10 +5346,23 @@ class APIProviderImpl extends AbstractAPIManager implements APIProvider {
                 ResponseCode.INTERNAL_SERVER_ERROR.getResponseCode();
     }
 
+
+    @Override
+    public boolean updateClientCertificate(String certificate, String alias, APIIdentifier APIIdentifier, int tenantId) throws APIManagementException {
+
+        CertificateManager certificateManager = CertificateManagerFactory.getCertificateManagerInstance();
+        return certificateManager.updateClientCertificate(certificate, alias, tenantId);
+    }
+
     @Override
     public int getCertificateCountPerTenant(int tenantId) throws APIManagementException {
 
         return new CertificateManagerImpl().getCertificateCount(tenantId);
+    }
+
+    @Override
+    public int getClientCertificateCount(int tenantId) throws APIManagementException {
+        return CertificateManagerFactory.getCertificateManagerInstance().getClientCertificateCount(tenantId);
     }
 
     @Override

@@ -2596,6 +2596,347 @@ paths:
             Workflow for the given reference in not found.
           schema:
             $ref: '#/definitions/Error'
+
+######################################################
+# The "Certificate Management" resource APIs
+######################################################
+
+  /clientCertificates:
+    #-------------------------------------------------------------------
+    # Retrieve/ Search the uploaded certificates.
+    #-------------------------------------------------------------------
+    get:
+      x-scope: 'apim:api_create'
+      produces:
+      - application/json
+      x-wso2-curl: "curl -X GET -H \"Authorization: Bearer ae4eae22-3f65-387b-a171-d37eaa366fa8\" -H \"Content-Type: application/json\" \"https://localhost:9443/api/am/publisher/v0.14/certificates\""
+      x-wso2-request: "GET https://localhost:9443/api/am/publisher/v0.14/clientcertificates?alias=wso2carbon&apiId=64eca60b-2e55-4c38-8603-e9e6bad7d809"
+      x-wso2-response: "HTTP/1.1 200 OK \n\n{\n  \"count\":1,\n  \"next\":\"\",\n  \"previous\":\"\",\n\"certificates\":[\n   {\n    \"alias\":\"wso2carbon\",\n    \"endpoint\":\"https://www.abc.com\"\n   }\n],\n  \"pagination\":{\n	  \"total\":1,\n          \"offset\":0,\n          \"limit\":25\n   } \n}"
+      summary: Retrieve/ Search uploaded Client Certificates.
+      description: |
+        This operation can be used to retrieve and search the uploaded client certificates.
+      tags:
+      - ClientCertificates (Collection)
+      parameters:
+      - $ref: '#/parameters/limit'
+      - $ref: '#/parameters/offset'
+      - in: query
+        name: alias
+        required: false
+        type: string
+        description: Alias for the client certificate
+      - in: query
+        name: apiId
+        required: false
+        type: string
+        description: UUID of the API
+      responses:
+        '200':
+          description: >
+            OK. Successful response with the list of matching certificate
+            information in the body.
+          schema:
+            $ref: '#/definitions/ClientCertificates'
+          headers:
+            Content-Type:
+              description: |
+                The content type of the body.
+              type: string
+        '400':
+          description: |
+            Bad Request.
+            Invalid request or validation error.
+          schema:
+            $ref: '#/definitions/Error'
+        '404':
+          description: |
+            Not Found.
+          schema:
+            $ref: '#/definitions/Error'
+        '500':
+          description: |
+            Internal Server Error
+          schema:
+            $ref: '#/definitions/Error'
+
+    #-------------------------------------------------------------------
+    # Upload client certificate resource api.
+    #-------------------------------------------------------------------
+    post:
+      x-scope: 'apim:api_create'
+      consumes:
+      - multipart/form-data
+      x-wso2-curl: "curl -X POST -H \"Authorization: Bearer ae4eae22-3f65-387b-a171-d37eaa366fa8\" -H \"Content-Type: multipart/form-data\"  -F \"certificate=@/home/user/wso2carbon.cert\" -F \"alias=wso2carbon\" -F \"endpoint=https://www.abc.com\" \"https://localhost:9443/api/am/publisher/v0.14/certificates/certificate\""
+      x-wso2-request: "POST https://localhost:9443/api/am/publisher/v0.14/clientcertificates/certificate \"Authorization: Bearer ae4eae22-3f65-387b-a171-d37eaa366fa8\" -F \"certificate=/home/user/wso2carbon.cert\" -F \"alias=wso2carbon\" -F \"endpoint=https://www.abc.com\""
+      x-wso2-response: "HTTP/1.1 201 Created.\r\nLocation: certificates?alias=wso2carbon\r\n{\"alias\":wso2carbon, \"endpoint\":\"https://www.abc.com\"}"
+      summary: Upload a new Certificate.
+      description: |
+        This operation can be used to upload a new certificate for an endpoint.
+      parameters:
+      - in: formData
+        name: certificate
+        description: The certificate that needs to be uploaded.
+        required: true
+        type: file
+      - in: formData
+        name: alias
+        description: Alias for the certificate
+        required: true
+        type: string
+      - in: formData
+        name: apiId
+        description: apiId to which the certificate should be applied.
+        required: true
+        type: string
+      - in: formData
+        name: tier
+        description: apiId to which the certificate should be applied.
+        required: true
+        type: string
+      tags:
+      - ClientCertificates (Individual)
+      responses:
+        '200':
+          description: |
+            OK.
+            The Certificate added successfully.
+          headers:
+            Location:
+              description: |
+                The URL of the newly created resource.
+              type: string
+            Content-Type:
+              description: |
+                The content type of the body.
+              type: string
+          schema:
+            $ref: '#/definitions/ClientCertMetadata'
+        '400':
+          description: |
+            Bad Request.
+            Invalid request or validation error.
+            * Failures due to existing alias or expired certificate.
+          schema:
+            $ref: '#/definitions/Error'
+        '500':
+          description: |
+            Internal Server Error
+            * Failed to add the Certificate due to an Internal Server Error
+          schema:
+            $ref: '#/definitions/Error'
+
+#-------------------------------------------------------------------
+# Update certificate resource.
+#-------------------------------------------------------------------
+  /clientCertificates/{alias}:
+    put:
+      x-scope: 'apim:api_create'
+      consumes:
+      - multipart/form-data
+      x-wso2-curl: "curl -X PUT -H \"Authorization: Bearer ae4eae22-3f65-387b-a171-d37eaa366fa8\" -H \"Content-Type:multipart/form-data\" -F \"certificate=@/home/user/wso2carbon.cert\" \"https://localhost:9443/api/am/publisher/v0.14/certificates/wso2carbon\""
+      x-wso2-request: "PUT https://localhost:9443/api/am/publisher/v0.14/certificates/wso2carbon Authorization: Bearer ae4eae22-3f65-387b-a171-d37eaa366fa8 -F  \"certificate=@/home/user/wso2carbon.cert\""
+      x-wso2-response: "HTTP/1.1 200 OK\r\n {\"alias\":wso2carbon,\"endpoint\":\"https://www.abc.com\"}"
+      summary: Update a certificate.
+      description: |
+        This operation can be used to update an uploaded certificate.
+      parameters:
+      - in: formData
+        name: certificate
+        description: The certificate that needs to be uploaded.
+        required: true
+        type: file
+      - in: path
+        name: alias
+        description: Alias for the certificate
+        required: true
+        type: string
+      - in:formData
+        name : tier
+        description: The tier of the certificate
+        required: false
+        type: string
+      tags:
+      - ClientCertificates (Individual)
+      responses:
+        '200':
+          description: |
+            OK.
+            The Certificate updated successfully.
+          schema:
+            $ref: '#/definitions/ClientCertMetadata'
+          headers:
+            Location:
+              description: |
+                The URL of the newly created resource.
+              type: string
+            Content-Type:
+              description: |
+                The content type of the body.
+              type: string
+        '400':
+          description: |
+            Bad Request.
+            Invalid request or validation error.
+          schema:
+            $ref: '#/definitions/Error'
+        '404':
+          description: |
+            Not Found.
+             * Updating certificat failed. Alias not found
+          schema:
+            $ref: '#/definitions/Error'
+        '500':
+          description: |
+            Internal Server Error
+          schema:
+            $ref: '#/definitions/Error'
+
+    #-------------------------------------------------------------------
+    # Delete Certificate resource
+    #-------------------------------------------------------------------
+    delete:
+      x-scope: 'apim:api_create'
+      x-wso2-curl:
+        "curl -X DELETE -H \"Authorization: Bearer ae4eae22-3f65-387b-a171-d37eaa366fa8\" \"https://localhost:9443/api/am/publisher/v0.14/certificates/wso2carbon\""
+      x-wso2-request: "DELETE https://localhost:9443/api/am/publisher/v0.14/certificates/wso2carbon Authorization: Bearer ae4eae22-3f65-387b-a171-d37eaa366fa8"
+      x-wso2-response: HTTP/1.1 200 OK
+      summary: Delete a certificate.
+      description: |
+        This operation can be used to delete an uploaded certificate.
+      parameters:
+      - in: path
+        name: alias
+        description: |
+          The alias of the certificate that should be deleted.
+        required: true
+        type: string
+      tags:
+      - ClientCertificates (Individual)
+      responses:
+        '200':
+          description: |
+            OK.
+            The Certificate deleted successfully.
+          headers:
+            Content-Type:
+              description: |
+                The content type of the body.
+              type: string
+        '400':
+          description: |
+            Bad Request.
+
+            Invalid request or validation error.
+          schema:
+            $ref: '#/definitions/Error'
+        '404':
+          description: |
+            Not Found. |
+            Failed to delete the certificate. Certificate could not found for
+            the given alias
+          schema:
+            $ref: '#/definitions/Error'
+        '500':
+          description: |
+            Internal Server Error
+          schema:
+            $ref: '#/definitions/Error'
+
+    #-------------------------------------------------------------------
+    # Get certificate information resource.
+    #-------------------------------------------------------------------
+    get:
+      x-scope: 'apim:api_create'
+      produces:
+      - application/json
+      x-wso2-curl: "curl -X GET \"https://apis.wso2.com/api/am/publisher/v0.14/certificates/wso2carbon\" -H  \"accept: application/json\""
+      x-wso2-request: "GET https://apis.wso2.com/api/am/publisher/v0.14/certificates/wso2carbon Authorization: Bearer ae4eae22-3f65-387b-a171-d37eaa366fa8"
+      x-wso2-response: "HTTP/1.1 200 OK \nContent-Type: application/json\r\n {\n  \"status\":\"Active\",\n  \"validity\":{\n    \"from\":\"Fri May 04 19:01:01 IST 2018\",\n    \"to\":\"Thu Aug 02 19:01:01 IST 2018\"\n  }\n,  \"version\":\"3\",\n  \"subject\":\"CN=wso2.com, OU=wso2, O=wso2, L=Colombo, ST=Western, C=LK\"\n}"
+      summary: Get the certificate information.
+      description: |
+        This operation can be used to get the information about a certificate.
+      parameters:
+      - in: path
+        name: alias
+        type: string
+        required: true
+      tags:
+      - ClientCertificates (Individual)
+      responses:
+        '200':
+          description: |
+            OK.
+          schema:
+            $ref: '#/definitions/CertificateInfo'
+          headers:
+            Content-Type:
+              description: |
+                The content type of the body.
+              type: string
+        '400':
+          description: |
+            Bad Request.
+            Invalid request or validation error.
+          schema:
+            $ref: '#/definitions/Error'
+        '404':
+          description: |
+            Not Found.
+            Alias not found
+          schema:
+            $ref: '#/definitions/Error'
+        '500':
+          description: |
+            Internal Server Error
+          schema:
+            $ref: '#/definitions/Error'
+
+  #-------------------------------------------------------------------
+  # Download the certificate which matches the alias.
+  #-------------------------------------------------------------------
+  /clientCertificates/{alias}/content:
+    get:
+      x-scope: 'apim:api_create'
+      x-wso2-curl: "curl -X GET \"https://apis.wso2.com/api/am/publisher/v0.14/certificates/wso2carbon/content\" -H \"accept: application/json\""
+      x-wso2-request: "GET https://apis.wso2.com/api/am/publisher/v0.14/certificates/wso2carbon/content Authorization: Bearer ae4eae22-3f65-387b-a171-d37eaa366fa8"
+      x-wso2-response: "HTTP/1.1 200 OK\r\n [content of the certificate]"
+      summary: Download a certificate.
+      description: |
+        This operation can be used to download a certificate which matches the given alias.
+      parameters:
+      - in: path
+        name: alias
+        type: string
+        required: true
+      tags:
+      - ClientCertificates (Individual)
+      responses:
+        '200':
+          description: |
+            OK.
+          headers:
+            Content-Type:
+              description: |
+                The content type of the body.
+              type: string
+        '400':
+          description: |
+            Bad Request.
+            Invalid request or validation error.
+            *
+          schema:
+            $ref: '#/definitions/Error'
+        '404':
+          description: |
+            Not Found. Certificate for the Alias not found.
+          schema:
+            $ref: '#/definitions/Error'
+        '500':
+          description: |
+            Internal Server Error
+          schema:
+            $ref: '#/definitions/Error'
+
 ######################################################
 # The "Certificate Management" resource APIs
 ######################################################
@@ -3337,7 +3678,12 @@ definitions:
             type: string
             description: |
               Name of the Authorization header used for invoking the API. If it is not set, Authorization header name specified
-              in tenant or system level will be used. 
+              in tenant or system level will be used.
+          apiSecurity:
+            type: string
+            description: |
+              Type of API security, the current API secured with. It can be either OAuth2 or mutual SSL or both. If
+              it is not set OAuth2 will be set as the security for the current API.
           maxTps:
             $ref: '#/definitions/APIMaxTps'
           visibility:
@@ -4149,3 +4495,52 @@ definitions:
       to:
         type: string
         example: 01-01-2019
+
+#-----------------------------------------------------
+# Client Certificates list resource
+#-----------------------------------------------------
+  ClientCertificates:
+    title: Client Certificates
+    description: Representation of a list of client certificates
+    properties:
+      count:
+        type: integer
+        example: 1
+      next:
+        type: string
+        example: '/certificates?limit=1&offset=2'
+      previous:
+        type: string
+        example: '/certificates?limit=1&offset=0'
+      certificates:
+        type: array
+        items:
+          $ref: '#/definitions/ClientCertMetadata'
+      pagination:
+        properties:
+          offset:
+            type: integer
+            example: 12
+          limit:
+            type: integer
+            example: 25
+          total:
+            type: integer
+            example: 1290
+
+#-----------------------------------------------------
+# Certificate metadata resource
+#-----------------------------------------------------
+  ClientCertMetadata:
+    title: Client certificate meta data
+    description: Meta data of certificate
+    properties:
+      alias:
+        type: string
+        example: wso2carbon
+      apiId:
+        type: string
+        example: 64eca60b-2e55-4c38-8603-e9e6bad7d809
+      tier:
+        type: string
+        example: Gold

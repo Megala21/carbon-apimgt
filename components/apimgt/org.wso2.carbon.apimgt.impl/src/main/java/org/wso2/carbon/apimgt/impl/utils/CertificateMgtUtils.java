@@ -147,6 +147,43 @@ public class CertificateMgtUtils {
         return responseCode;
     }
 
+
+    /**
+     * To validate the current certificate.
+     *
+     * @param certificate Bas64 endcoded certificated.
+     * @return response code based on the validation
+     */
+    public ResponseCode validateCertificate(String certificate) {
+        ResponseCode responseCode = ResponseCode.SUCCESS;
+        ByteArrayInputStream serverCert = null;
+
+        try {
+            byte[] cert = (Base64.decodeBase64(certificate.getBytes(StandardCharsets.UTF_8)));
+            serverCert = new ByteArrayInputStream(cert);
+
+            if (serverCert.available() == 0) {
+                responseCode = ResponseCode.CERTIFICATE_NOT_FOUND;
+            } else {
+                CertificateFactory certificateFactory = CertificateFactory.getInstance(CERTIFICATE_TYPE);
+                if (serverCert.available() > 0) {
+                    Certificate generatedCertificate = certificateFactory.generateCertificate(serverCert);
+                    X509Certificate x509Certificate = (X509Certificate) generatedCertificate;
+                    if (x509Certificate.getNotAfter().getTime() <= System.currentTimeMillis()) {
+                        responseCode = ResponseCode.CERTIFICATE_EXPIRED;
+                    }
+                }
+            }
+        } catch (CertificateException e) {
+            log.error("Certificate Exception while trying to check the validity of the certificate ", e);
+            responseCode = ResponseCode.INTERNAL_SERVER_ERROR;
+
+        } finally {
+            closeStreams(serverCert);
+        }
+        return responseCode;
+    }
+
     /**
      * To validate the current certificate and alias.
      *
@@ -332,12 +369,7 @@ public class CertificateMgtUtils {
 
             if (trustStore.containsAlias(alias)) {
                 X509Certificate certificate = (X509Certificate) trustStore.getCertificate(alias);
-                certificateInformation.setStatus(certificate.getNotAfter().getTime() > System.currentTimeMillis() ?
-                        "Active" : "Expired");
-                certificateInformation.setFrom(certificate.getNotBefore().toString());
-                certificateInformation.setTo(certificate.getNotAfter().toString());
-                certificateInformation.setSubject(certificate.getSubjectDN().toString());
-                certificateInformation.setVersion(String.valueOf(certificate.getVersion()));
+                certificateInformation = getCertificateInformation(certificate);
             }
         } catch (IOException e) {
             throw new CertificateManagementException("Error wile loading the keystore.", e);
@@ -351,6 +383,37 @@ public class CertificateMgtUtils {
             closeStreams(localTrustStoreStream);
         }
         return certificateInformation;
+    }
+
+    public CertificateInformationDTO getCertificateInformation(X509Certificate certificate) {
+        CertificateInformationDTO certificateInformation = new CertificateInformationDTO();
+        certificateInformation.setStatus(certificate.getNotAfter().getTime() > System.currentTimeMillis() ?
+                "Active" : "Expired");
+        certificateInformation.setFrom(certificate.getNotBefore().toString());
+        certificateInformation.setTo(certificate.getNotAfter().toString());
+        certificateInformation.setSubject(certificate.getSubjectDN().toString());
+        certificateInformation.setVersion(String.valueOf(certificate.getVersion()));
+        return certificateInformation;
+    }
+
+    public CertificateInformationDTO getCertificateInfo(String base64EncodedCertificate) {
+        CertificateInformationDTO certificateInformationDTO = null;
+        try {
+            byte[] cert = (Base64.decodeBase64(base64EncodedCertificate.getBytes(StandardCharsets.UTF_8)));
+            InputStream serverCert = new ByteArrayInputStream(cert);
+            if (serverCert.available() == 0) {
+                log.error("Provided certificate is empty for getting certificate information");
+            }
+
+            CertificateFactory cf = CertificateFactory.getInstance(CERTIFICATE_TYPE);
+            while (serverCert.available() > 0) {
+                Certificate certificate = cf.generateCertificate(serverCert);
+                certificateInformationDTO = getCertificateInformation((X509Certificate) certificate);
+            }
+        } catch (IOException | CertificateException e) {
+            log.error("Error while getting the certificate information from the certificate", e);
+        }
+        return certificateInformationDTO;
     }
 
     /**

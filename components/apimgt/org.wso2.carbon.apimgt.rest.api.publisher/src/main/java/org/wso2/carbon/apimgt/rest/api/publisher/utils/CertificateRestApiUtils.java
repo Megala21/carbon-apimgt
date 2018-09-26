@@ -23,14 +23,21 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.wso2.carbon.apimgt.api.APIManagementException;
 import org.wso2.carbon.apimgt.api.dto.CertificateMetadataDTO;
 import org.wso2.carbon.apimgt.rest.api.publisher.dto.CertMetadataDTO;
 import org.wso2.carbon.apimgt.rest.api.publisher.dto.CertificatesDTO;
 import org.wso2.carbon.apimgt.rest.api.util.RestApiConstants;
 import org.wso2.carbon.apimgt.rest.api.util.utils.RestApiUtil;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.security.cert.Certificate;
+import java.security.cert.CertificateException;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -55,6 +62,30 @@ public class CertificateRestApiUtils {
         byte[] encodedCert = Base64.encodeBase64(certificateBytes);
         return new String(encodedCert, StandardCharset.UTF_8);
     }
+
+    public static ByteArrayInputStream getDecodedCertificate(String certificate) throws APIManagementException {
+        byte[] cert = (Base64.decodeBase64(certificate.getBytes(StandardCharsets.UTF_8)));
+        ByteArrayInputStream serverCert = new ByteArrayInputStream(cert);
+        try {
+            CertificateFactory cf = CertificateFactory.getInstance("X.509");
+            if (serverCert.available() > 0) {
+                Certificate generatedCertificate = cf.generateCertificate(serverCert);
+                X509Certificate x509Certificate = (X509Certificate) generatedCertificate;
+                return new ByteArrayInputStream(x509Certificate.getEncoded());
+            }
+        } catch (CertificateException e) {
+            throw new APIManagementException("Error while decoding the certificate", e);
+        }
+        return null;
+
+    }
+
+   /* public static String generateEncodedCertificate(InputStream certificateInputStream) throws IOException {
+
+        byte[] certificateBytes = IOUtils.toByteArray(certificateInputStream);
+        byte[] encodedCert = Base64.encodeBase64(certificateBytes);
+        return new String(encodedCert, StandardCharset.UTF_8);
+    }*/
 
     /**
      * Get the paginated list of certificates based on the limit and offset values provided.
@@ -137,19 +168,21 @@ public class CertificateRestApiUtils {
     /**
      * Generates the query string from the provided params.
      *
-     * @param alias    : The alias param.
-     * @param endpoint : The endpoint param.
+     * @param firstParamName   : Name of the first param.
+     * @param firstParamValue  : Value of the first param.
+     * @param secondParamName  : Name of the second param.
+     * @param secondParamValue : Value of the second param.
      * @return : The generated query string.
      */
-    public static String buildQueryString(String alias, String endpoint) {
-
+    public static String buildQueryString(String firstParamName, String firstParamValue,
+            String secondParamName, String secondParamValue) {
         String query = "";
-        if (StringUtils.isNotBlank(alias)) {
-            query = query + "&alias=" + alias;
+        if (StringUtils.isNotBlank(firstParamValue)) {
+            query = query + "&" + firstParamName + "=" + firstParamValue;
         }
 
-        if (StringUtils.isNotBlank(endpoint)) {
-            query = query + "&endpoint=" + endpoint;
+        if (StringUtils.isNotBlank(secondParamValue)) {
+            query = query + "&" + secondParamName + "=" + secondParamValue;
         }
         if (log.isDebugEnabled()) {
             log.debug(String.format("The query string for the api : %s", query));

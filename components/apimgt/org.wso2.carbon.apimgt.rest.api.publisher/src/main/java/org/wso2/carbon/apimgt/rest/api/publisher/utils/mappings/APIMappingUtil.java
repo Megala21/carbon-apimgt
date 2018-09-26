@@ -25,6 +25,7 @@ import org.json.simple.JSONObject;
 import org.wso2.carbon.apimgt.api.APIDefinition;
 import org.wso2.carbon.apimgt.api.APIManagementException;
 import org.wso2.carbon.apimgt.api.APIProvider;
+import org.wso2.carbon.apimgt.api.dto.CertificateInformationDTO;
 import org.wso2.carbon.apimgt.api.model.API;
 import org.wso2.carbon.apimgt.api.model.APIIdentifier;
 import org.wso2.carbon.apimgt.api.model.CORSConfiguration;
@@ -36,15 +37,7 @@ import org.wso2.carbon.apimgt.impl.APIConstants;
 import org.wso2.carbon.apimgt.impl.definitions.APIDefinitionFromOpenAPISpec;
 import org.wso2.carbon.apimgt.impl.internal.ServiceReferenceHolder;
 import org.wso2.carbon.apimgt.impl.utils.APIUtil;
-import org.wso2.carbon.apimgt.rest.api.publisher.dto.APIBusinessInformationDTO;
-import org.wso2.carbon.apimgt.rest.api.publisher.dto.APICorsConfigurationDTO;
-import org.wso2.carbon.apimgt.rest.api.publisher.dto.APIDetailedDTO;
-import org.wso2.carbon.apimgt.rest.api.publisher.dto.APIEndpointSecurityDTO;
-import org.wso2.carbon.apimgt.rest.api.publisher.dto.APIInfoDTO;
-import org.wso2.carbon.apimgt.rest.api.publisher.dto.APIListDTO;
-import org.wso2.carbon.apimgt.rest.api.publisher.dto.LabelDTO;
-import org.wso2.carbon.apimgt.rest.api.publisher.dto.APIMaxTpsDTO;
-import org.wso2.carbon.apimgt.rest.api.publisher.dto.SequenceDTO;
+import org.wso2.carbon.apimgt.rest.api.publisher.dto.*;
 import org.wso2.carbon.apimgt.rest.api.util.RestApiConstants;
 import org.wso2.carbon.apimgt.rest.api.util.utils.RestApiUtil;
 import org.wso2.carbon.user.api.UserStoreException;
@@ -328,7 +321,7 @@ public class APIMappingUtil {
             dto.setLabels(labels);
         }
         dto.setAuthorizationHeader(model.getAuthorizationHeader());
-
+        dto.setApiSecurity(model.getApiSecurity());
         return dto;
     }
 
@@ -544,6 +537,7 @@ public class APIMappingUtil {
         setEndpointSecurityFromApiDTOToModel(dto, model);
         setMaxTpsFromApiDTOToModel(dto, model);
         model.setAuthorizationHeader(dto.getAuthorizationHeader());
+        model.setApiSecurity(dto.getApiSecurity());
         return model;
     }
 
@@ -653,6 +647,20 @@ public class APIMappingUtil {
             apiInfoDTO.setThumbnailUri(getThumbnailUri(api.getUUID()));
         }
         return apiInfoDTO;
+    }
+
+    public static CertificateInfoDTO fromCertificateInformationToDTO(CertificateInformationDTO certificateInformationDTO) {
+        CertificateValidityDTO certificateValidityDTO = new CertificateValidityDTO();
+        certificateValidityDTO.setFrom(certificateInformationDTO.getFrom());
+        certificateValidityDTO.setTo(certificateInformationDTO.getTo());
+
+        CertificateInfoDTO certificateInfoDTO = new CertificateInfoDTO();
+        certificateInfoDTO.setValidity(certificateValidityDTO);
+        certificateInfoDTO.setStatus(certificateInformationDTO.getStatus());
+        certificateInfoDTO.setSubject(certificateInformationDTO.getSubject());
+        certificateInfoDTO.setVersion(certificateInformationDTO.getVersion());
+
+        return certificateInfoDTO;
     }
 
     private static void setEndpointSecurityFromApiDTOToModel (APIDetailedDTO dto, API api) {

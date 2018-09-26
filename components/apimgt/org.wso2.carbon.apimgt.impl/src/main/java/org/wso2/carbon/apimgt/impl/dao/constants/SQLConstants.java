@@ -2887,6 +2887,9 @@ public class SQLConstants {
         public static final String INSERT_CERTIFICATE = "INSERT INTO AM_API_CLIENT_CERTIFICATE " +
                 "(CERTIFICATE, TENANT_ID, ALIAS, API_ID, UNIQUE_ID, TIER_NAME) VALUES(?, ?, ?, ?, ?, ?)";
 
+        public static final String UPDATE_CERTIFICATE = "UPDATE AM_API_CLIENT_CERTIFICATE SET CERTIFICATE = ? "
+                + "WHERE TENANT_ID=? AND ALIAS=?";
+
         public static final String GET_CERTIFICATES_FOR_API = "SELECT * FROM AM_API_CLIENT_CERTIFICATE WHERE "
                 + "TENANT_ID=? and API_ID=? and REMOVED=?";
 
@@ -2895,6 +2898,22 @@ public class SQLConstants {
 
         public static final String SELECT_CERTIFICATE_FOR_ALIAS = "SELECT * FROM AM_API_CLIENT_CERTIFICATE "
                 + "WHERE ALIAS=? AND REMOVED=?";
+
+        public static final String SELECT_CERTIFICATE_FOR_TENANT_ALIAS = "SELECT * FROM AM_API_CLIENT_CERTIFICATE "
+                + "WHERE REMOVED=? AND TENANT_ID=? AND ALIAS=?";
+
+        public static final String SELECT_CERTIFICATE_FOR_ALIAS_APIID = "SELECT * FROM AM_API_CLIENT_CERTIFICATE "
+                + "WHERE REMOVED=? AND TENANT_ID=? AND ALIAS=? AND API_ID=?";
+
+        public static final String SELECT_CERTIFICATE_FOR_TENANT = "SELECT * FROM AM_API_CLIENT_CERTIFICATE "
+                + "WHERE REMOVED=? AND TENANT_ID=?";
+
+        public static final String SELECT_CERTIFICATE_FOR_CURRENTTENANT = "SELECT AC.CERTIFICATE, AA.API_PROVIDER,"
+                + "AA.API_NAME, AA.API_VERSION FROM "
+                + "AM_API_CLIENT_CERTIFICATE AC,"
+                + "AM_API AA "
+                + "WHERE AC.ALIAS=? AND AC.REMOVED=? AND AC.TENANT_ID=? AND AC.API_ID=AA.API_ID";
+
         public static final String PRE_DELETE_CERTIFICATES = "DELETE FROM AM_API_CLIENT_CERTIFICATE "
                 + "WHERE TENANT_ID=? and API_ID=? and REMOVED=? and ALIAS=?";
 
@@ -2914,5 +2933,7 @@ public class SQLConstants {
                 + "WHERE API_ID=? AND UNIQUE_ID=? AND PS.NAME = CER.TIER_NAME AND PS.TENANT_ID=CER.TENANT_ID";
 
         public static final String VERIFY_TABLE = "SELECT ALIAS from AM_API_CLIENT_CERTIFICATE";
+        public static final String CERTIFICATE_COUNT_QUERY = "SELECT COUNT(*) AS count FROM AM_API_CLIENT_CERTIFICATE " +
+                "WHERE TENANT_ID=?";
     }
 }

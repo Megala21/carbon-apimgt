@@ -175,6 +175,9 @@ public interface CertificateManager {
      */
     List<CertificateMetadataDTO> getCertificates(int tenantId, String alias, String endpoint) throws APIManagementException;
 
+    List<ClientCertificateDTO> getClientCertificates(int tenantId, String alias,
+            APIIdentifier apiIdentifier) throws APIManagementException;
+
     /**
      * Check whether a certificate for the given alias is present in the database.
      *
@@ -184,10 +187,11 @@ public interface CertificateManager {
      */
     boolean isCertificatePresent(int tenantId, String alias) throws APIManagementException;
 
+    ClientCertificateDTO getClientCertificate(int tenantId, String alias) throws APIManagementException;
+
     /**
      * Method to retrieve the properties (expiry date etc) of the certificate which matches the given alias.
      *
-     * @param alias : Alias of the certificate that the properties should be retrieved.
      * @return : The common information of the certificate.
      * @throws APIManagementException :
      */
@@ -203,12 +207,24 @@ public interface CertificateManager {
     ResponseCode updateCertificate(String certificate, String alias) throws APIManagementException;
 
     /**
+     * Method to update an existing client certificate.
+     *
+     * @param certificate : The base64 encoded certificate string.
+     * @param alias       : The alias of the certificate that should be updated.
+     * @param tenantId    : Id of the tenant.
+     * @return : true if update succeeds, false if fails
+     */
+    boolean updateClientCertificate(String certificate, String alias, int tenantId) throws APIManagementException;
+
+    /**
      * Get the number of certificates which a tenant has uploaded.
      *
      * @param tenantId : The id of the tenant.
      * @return : The total count of certificates.
      */
     int getCertificateCount(int tenantId) throws APIManagementException;
+
+    int getClientCertificateCount(int tenantId) throws APIManagementException;
 
     /**
      * Get the certificate which matches the provided alias from the trust store.
