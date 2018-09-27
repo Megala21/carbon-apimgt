@@ -211,6 +211,7 @@ public class CertificateMgtDAO {
                 index++;
             }
             preparedStatement.setInt(index, tenantId);
+            index++;
             preparedStatement.setString(index, alias + "_" + tenantId);
             result = preparedStatement.executeUpdate() == 1;
             connection.commit();
@@ -859,8 +860,8 @@ public class CertificateMgtDAO {
                 String apiProvider = resultSet.getString("API_PROVIDER");
                 String apiVersion = resultSet.getString("API_VERSION");
                 String apiName = resultSet.getString("API_NAME");
-                APIIdentifier apiIdentifier = new APIIdentifier(APIUtil.replaceEmailDomain(apiProvider), apiVersion,
-                        apiName);
+                APIIdentifier apiIdentifier = new APIIdentifier(APIUtil.replaceEmailDomain(apiProvider), apiName,
+                        apiVersion);
                 clientCertificateDTO.setApiIdentifier(apiIdentifier);
                 clientCertificateDTO.setCertificate(new String(blob.getBytes(1L, (int) blob.length())));
             }

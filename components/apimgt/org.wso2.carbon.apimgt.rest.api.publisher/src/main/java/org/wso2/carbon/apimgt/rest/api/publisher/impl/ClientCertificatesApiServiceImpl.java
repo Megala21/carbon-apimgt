@@ -7,9 +7,11 @@ import org.apache.cxf.jaxrs.ext.multipart.Attachment;
 import org.apache.cxf.jaxrs.ext.multipart.ContentDisposition;
 import org.wso2.carbon.apimgt.api.APIManagementException;
 import org.wso2.carbon.apimgt.api.APIProvider;
+import org.wso2.carbon.apimgt.api.FaultGatewaysException;
 import org.wso2.carbon.apimgt.api.dto.CertificateInformationDTO;
 import org.wso2.carbon.apimgt.api.dto.ClientCertificateDTO;
 import org.wso2.carbon.apimgt.api.model.API;
+import org.wso2.carbon.apimgt.api.model.APIIdentifier;
 import org.wso2.carbon.apimgt.impl.certificatemgt.ResponseCode;
 import org.wso2.carbon.apimgt.impl.utils.APIUtil;
 import org.wso2.carbon.apimgt.impl.utils.CertificateMgtUtils;
@@ -73,6 +75,8 @@ public class ClientCertificatesApiServiceImpl extends ClientCertificatesApiServi
                             alias);
 
             if (responseCode == ResponseCode.SUCCESS.getResponseCode()) {
+                API api = apiProvider.getAPI(clientCertificateDTO.getApiIdentifier());
+                apiProvider.updateAPI(api);
                 if (log.isDebugEnabled()) {
                     log.debug(String.format("The client certificate which belongs to tenant : %s represented by the "
                             + "alias : %s is deleted successfully", tenantDomain, alias));
@@ -88,8 +92,11 @@ public class ClientCertificatesApiServiceImpl extends ClientCertificatesApiServi
             }
         } catch (APIManagementException e) {
             RestApiUtil.handleInternalServerError(
-                    "Error while deleteing the client certificate with alias " + alias + " for the tenant "
+                    "Error while deleting the client certificate with alias " + alias + " for the tenant "
                             + tenantDomain, e, log);
+        } catch (FaultGatewaysException e) {
+            RestApiUtil.handleInternalServerError(
+                    "Error while publishing the certificate change to gateways for the alias " + alias, e, log);
         }
         return null;
     }
@@ -140,6 +147,8 @@ public class ClientCertificatesApiServiceImpl extends ClientCertificatesApiServi
                             tenantId);
 
             if (ResponseCode.SUCCESS.getResponseCode() == responseCode) {
+                API api = apiProvider.getAPI(clientCertificateDTO.getApiIdentifier());
+                apiProvider.updateAPI(api);
                 ClientCertMetadataDTO clientCertMetadataDTO = new ClientCertMetadataDTO();
                 clientCertMetadataDTO.setAlias(alias);
                 clientCertMetadataDTO.setApiId(clientCertificateDTO.getApiIdentifier().toString());
@@ -159,13 +168,17 @@ public class ClientCertificatesApiServiceImpl extends ClientCertificatesApiServi
         } catch (APIManagementException e) {
             RestApiUtil.handleInternalServerError(
                     "Error while updating the client certificate for the alias " + alias + " due to an internal "
-                            + "server " + "error", log);
+                            + "server error", e, log);
         } catch (IOException e) {
             RestApiUtil
-                    .handleInternalServerError("Error while encoding client certificate for the alias " + alias, log);
+                    .handleInternalServerError("Error while encoding client certificate for the alias " + alias, e,
+                            log);
         } catch (URISyntaxException e) {
             RestApiUtil.handleInternalServerError(
-                    "Error while generating the resource location URI for alias '" + alias + "'", log);
+                    "Error while generating the resource location URI for alias '" + alias + "'", e, log);
+        }  catch (FaultGatewaysException e) {
+            RestApiUtil.handleInternalServerError(
+                    "Error while publishing the certificate change to gateways for the alias " + alias, e, log);
         }
         return null;
     }
@@ -182,20 +195,22 @@ public class ClientCertificatesApiServiceImpl extends ClientCertificatesApiServi
         try {
             APIProvider apiProvider = RestApiUtil.getLoggedInUserProvider();
             int totalCount = apiProvider.getClientCertificateCount(tenantId);
-            API api = apiProvider.getAPIbyUUID(apiId, RestApiUtil.getLoggedInUserTenantDomain());
 
             if (totalCount > 0) {
-                certificates = apiProvider.searchClientCertificates(tenantId, alias, api.getId());
+                APIIdentifier apiIdentifier = null;
+                if (StringUtils.isNotEmpty(apiId)) {
+                    API api = apiProvider.getAPIbyUUID(apiId, RestApiUtil.getLoggedInUserTenantDomain());
+                    apiIdentifier = api.getId();
+                }
+                certificates = apiProvider.searchClientCertificates(tenantId, alias, apiIdentifier);
             }
 
             ClientCertificatesDTO certificatesDTO = CertificateRestApiUtils
                     .getPaginatedClientCertificates(certificates, limit, offset, query);
-
             APIListPaginationDTO paginationDTO = new APIListPaginationDTO();
             paginationDTO.setLimit(limit);
             paginationDTO.setOffset(offset);
             paginationDTO.setTotal(totalCount);
-
             certificatesDTO.setPagination(paginationDTO);
             return Response.status(Response.Status.OK).entity(certificatesDTO).build();
         } catch (APIManagementException e) {
@@ -230,6 +245,7 @@ public class ClientCertificatesApiServiceImpl extends ClientCertificatesApiServi
             }
 
             if (ResponseCode.SUCCESS.getResponseCode() == responseCode) {
+                apiProvider.updateAPI(api);
                 ClientCertMetadataDTO certificateDTO = new ClientCertMetadataDTO();
                 certificateDTO.setAlias(alias);
                 certificateDTO.setApiId(apiId);
@@ -249,13 +265,16 @@ public class ClientCertificatesApiServiceImpl extends ClientCertificatesApiServi
         } catch (APIManagementException e) {
             RestApiUtil.handleInternalServerError(
                     "APIManagement exception while adding the certificate to the API " + apiId + " due to an internal "
-                            + "server error", log);
+                            + "server error", e, log);
         } catch (IOException e) {
             RestApiUtil.handleInternalServerError(
-                    "IOException while generating the encoded certificate for the API " + apiId, log);
+                    "IOException while generating the encoded certificate for the API " + apiId, e, log);
         } catch (URISyntaxException e) {
             RestApiUtil.handleInternalServerError(
-                    "Error while generating the resource location URI for alias '" + alias + "'", log);
+                    "Error while generating the resource location URI for alias '" + alias + "'", e, log);
+        } catch (FaultGatewaysException e) {
+            RestApiUtil.handleInternalServerError(
+                    "Error while publishing the certificate change to gateways for the alias " + alias, e, log);
         }
         return null;
     }

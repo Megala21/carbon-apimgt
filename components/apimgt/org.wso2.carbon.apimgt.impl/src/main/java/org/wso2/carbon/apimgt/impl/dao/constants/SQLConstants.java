@@ -2891,10 +2891,10 @@ public class SQLConstants {
                 + "WHERE TENANT_ID=? AND ALIAS=?";
 
         public static final String UPDATE_CERTIFICATE_AND_TIER =
-                "UPDATE AM_API_CLIENT_CERTIFICATE SET CERTIFICATE = ?, TIER = ? WHERE TENANT_ID=? AND ALIAS=?";
+                "UPDATE AM_API_CLIENT_CERTIFICATE SET CERTIFICATE = ?, TIER_NAME = ? WHERE TENANT_ID=? AND ALIAS=?";
 
         public static final String UPDATE_TIER =
-                "UPDATE AM_API_CLIENT_CERTIFICATE SET TIER = ? WHERE TENANT_ID=? AND ALIAS=?";
+                "UPDATE AM_API_CLIENT_CERTIFICATE SET TIER_NAME = ? WHERE TENANT_ID=? AND ALIAS=?";
 
         public static final String GET_CERTIFICATES_FOR_API = "SELECT * FROM AM_API_CLIENT_CERTIFICATE WHERE "
                 + "TENANT_ID=? and API_ID=? and REMOVED=?";
@@ -2905,21 +2905,21 @@ public class SQLConstants {
         public static final String SELECT_CERTIFICATE_FOR_ALIAS = "SELECT ALIAS FROM AM_API_CLIENT_CERTIFICATE "
                 + "WHERE ALIAS=? AND REMOVED=?";
 
-        public static final String SELECT_CERTIFICATE_FOR_TENANT = "SELECT AC.ALIAS, AC.TIER, AA.API_PROVIDER, "
-                + "AA.API_NAME, AA.API_VERSION"
+        public static final String SELECT_CERTIFICATE_FOR_TENANT = "SELECT AC.ALIAS, AC.TIER_NAME, AA.API_PROVIDER, "
+                + "AA.API_NAME, AA.API_VERSION "
                 + "FROM AM_API_CLIENT_CERTIFICATE AC, AM_API AA "
                 + "WHERE AC.REMOVED=? AND AC.TENANT_ID=? AND AA.API_ID=AC.API_ID";
 
-        public static final String SELECT_CERTIFICATE_FOR_TENANT_ALIAS = "SELECT AC.ALIAS, AC.TIER, AA.API_PROVIDER, "
-                + "AA.API_NAME, AA.API_VERSION"
+        public static final String SELECT_CERTIFICATE_FOR_TENANT_ALIAS = "SELECT AC.ALIAS, AC.TIER_NAME, AA.API_PROVIDER, "
+                + "AA.API_NAME, AA.API_VERSION "
                 + "FROM AM_API_CLIENT_CERTIFICATE AC, AM_API AA "
                 + "WHERE AC.REMOVED=? AND AC.TENANT_ID=? AND AC.ALIAS=? AND AA.API_ID=AC.API_ID";
 
-        public static final String SELECT_CERTIFICATE_FOR_TENANT_ALIAS_APIID = "SELECT AC.ALIAS, AC.TIER"
+        public static final String SELECT_CERTIFICATE_FOR_TENANT_ALIAS_APIID = "SELECT AC.ALIAS, AC.TIER_NAME"
                 + "FROM AM_API_CLIENT_CERTIFICATE AC"
                 + "WHERE AC.REMOVED=? AND AC.TENANT_ID=? AND AC.ALIAS=? AND AC.API_ID = ?";
 
-        public static final String SELECT_CERTIFICATE_FOR_TENANT_APIID = "SELECT AC.ALIAS, AC.TIER"
+        public static final String SELECT_CERTIFICATE_FOR_TENANT_APIID = "SELECT AC.ALIAS, AC.TIER_NAME"
                 + "FROM AM_API_CLIENT_CERTIFICATE AC"
                 + "WHERE AC.REMOVED=? AND AC.TENANT_ID=? AND AC.API_ID=?";
 
