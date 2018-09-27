@@ -214,7 +214,7 @@ public interface CertificateManager {
      * @param tenantId    : Id of the tenant.
      * @return : true if update succeeds, false if fails
      */
-    boolean updateClientCertificate(String certificate, String alias, int tenantId) throws APIManagementException;
+    ResponseCode updateClientCertificate(String certificate, String alias, String tier, int tenantId) throws APIManagementException;
 
     /**
      * Get the number of certificates which a tenant has uploaded.

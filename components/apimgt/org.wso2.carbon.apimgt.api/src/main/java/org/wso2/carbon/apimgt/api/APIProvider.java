@@ -1031,7 +1031,8 @@ public interface APIProvider extends APIManager {
      */
     int updateCertificate(String certificateString, String alias) throws APIManagementException;
 
-    boolean updateClientCertificate(String certificate, String alias, APIIdentifier APIIdentifier, int tenantId) throws APIManagementException ;
+    int updateClientCertificate(String certificate, String alias, APIIdentifier APIIdentifier, String tier,
+            int tenantId) throws APIManagementException;
     /**
      * Retrieve the certificate which matches the given alias.
      *

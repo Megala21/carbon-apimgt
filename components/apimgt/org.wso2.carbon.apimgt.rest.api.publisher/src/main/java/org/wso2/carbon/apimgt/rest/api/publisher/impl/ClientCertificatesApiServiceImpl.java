@@ -8,16 +8,16 @@ import org.apache.cxf.jaxrs.ext.multipart.ContentDisposition;
 import org.wso2.carbon.apimgt.api.APIManagementException;
 import org.wso2.carbon.apimgt.api.APIProvider;
 import org.wso2.carbon.apimgt.api.dto.CertificateInformationDTO;
-import org.wso2.carbon.apimgt.api.dto.CertificateMetadataDTO;
 import org.wso2.carbon.apimgt.api.dto.ClientCertificateDTO;
 import org.wso2.carbon.apimgt.api.model.API;
-import org.wso2.carbon.apimgt.api.model.APIIdentifier;
 import org.wso2.carbon.apimgt.impl.certificatemgt.ResponseCode;
 import org.wso2.carbon.apimgt.impl.utils.APIUtil;
 import org.wso2.carbon.apimgt.impl.utils.CertificateMgtUtils;
-import org.wso2.carbon.apimgt.rest.api.publisher.ApiResponseMessage;
 import org.wso2.carbon.apimgt.rest.api.publisher.ClientCertificatesApiService;
-import org.wso2.carbon.apimgt.rest.api.publisher.dto.*;
+import org.wso2.carbon.apimgt.rest.api.publisher.dto.APIListPaginationDTO;
+import org.wso2.carbon.apimgt.rest.api.publisher.dto.CertificateInfoDTO;
+import org.wso2.carbon.apimgt.rest.api.publisher.dto.ClientCertMetadataDTO;
+import org.wso2.carbon.apimgt.rest.api.publisher.dto.ClientCertificatesDTO;
 import org.wso2.carbon.apimgt.rest.api.publisher.utils.CertificateRestApiUtils;
 import org.wso2.carbon.apimgt.rest.api.publisher.utils.mappings.APIMappingUtil;
 import org.wso2.carbon.apimgt.rest.api.util.RestApiConstants;
@@ -25,11 +25,11 @@ import org.wso2.carbon.apimgt.rest.api.util.utils.RestApiUtil;
 
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -117,57 +117,64 @@ public class ClientCertificatesApiServiceImpl extends ClientCertificatesApiServi
     }
 
     @Override
-    public Response clientCertificatesAliasPut(InputStream certificateInputStream,Attachment certificateDetail,String alias){
+    public Response clientCertificatesAliasPut(String alias, InputStream certificateInputStream,
+            Attachment certificateDetail, String tier) {
         try {
             ContentDisposition contentDisposition = certificateDetail.getContentDisposition();
             String fileName = contentDisposition.getParameter(RestApiConstants.CONTENT_DISPOSITION_FILENAME);
-            if (StringUtils.isBlank(fileName)) {
-                RestApiUtil.handleBadRequest("Certificate update failed. The Certificate should not be empty", log);
-            }
+            String base64EncodedCert = null;
             APIProvider apiProvider = RestApiUtil.getLoggedInUserProvider();
             String userName = RestApiUtil.getLoggedInUsername();
             int tenantId = APIUtil.getTenantId(userName);
             ClientCertificateDTO clientCertificateDTO  = preValidateClientCertificate(alias);
 
-            String base64EncodedCert = CertificateRestApiUtils.generateEncodedCertificate(certificateInputStream);
-            boolean isSucceeded = apiProvider
-                    .updateClientCertificate(base64EncodedCert, alias, clientCertificateDTO.getApiIdentifier(),
+            if (StringUtils.isNotBlank(fileName)) {
+                base64EncodedCert = CertificateRestApiUtils.generateEncodedCertificate(certificateInputStream);
+            }
+
+            if (StringUtils.isEmpty(base64EncodedCert) && StringUtils.isEmpty(tier)) {
+                return Response.ok().entity("Client Certificate is not updated for alias " + alias).build();
+            }
+            int responseCode = apiProvider
+                    .updateClientCertificate(base64EncodedCert, alias, clientCertificateDTO.getApiIdentifier(), tier,
                             tenantId);
 
-            if (isSucceeded) {
+            if (ResponseCode.SUCCESS.getResponseCode() == responseCode) {
                 ClientCertMetadataDTO clientCertMetadataDTO = new ClientCertMetadataDTO();
                 clientCertMetadataDTO.setAlias(alias);
                 clientCertMetadataDTO.setApiId(clientCertificateDTO.getApiIdentifier().toString());
-                URI updatedCertUri = new URI(RestApiConstants.CERTS_BASE_PATH + "?alias=" + alias);
+                URI updatedCertUri = new URI(RestApiConstants.CLIENT_CERTS_BASE_PATH + "?alias=" + alias);
 
                 return Response.ok(updatedCertUri).entity(clientCertMetadataDTO).build();
+            } else if (ResponseCode.INTERNAL_SERVER_ERROR.getResponseCode() == responseCode) {
+                RestApiUtil.handleInternalServerError(
+                        "Error while updating the client certificate for the alias " + alias + " due to an internal "
+                                + "server error", log);
+            } else if (ResponseCode.CERTIFICATE_NOT_FOUND.getResponseCode() == responseCode) {
+                RestApiUtil.handleResourceNotFoundError("", log);
+            } else if (ResponseCode.CERTIFICATE_EXPIRED.getResponseCode() == responseCode) {
+                RestApiUtil.handleBadRequest("Error while updating the client certificate for the alias " + alias +
+                        " Certificate Expired.", log);
             }
-
-//            if (ResponseCode.INTERNAL_SERVER_ERROR.getResponseCode() == responseCode) {
-//                RestApiUtil.handleInternalServerError("Error while updating the certificate due to an internal " +
-//                        "server error", log);
-//            } else if (ResponseCode.CERTIFICATE_NOT_FOUND.getResponseCode() == responseCode) {
-//                RestApiUtil.handleResourceNotFoundError("", log);
-//            } else if (ResponseCode.CERTIFICATE_EXPIRED.getResponseCode() == responseCode) {
-//                RestApiUtil.handleBadRequest("Error while updating the certificate. Certificate Expired.", log);
-//            }
         } catch (APIManagementException e) {
-            RestApiUtil.handleInternalServerError("Error while adding the certificate due to an internal server " +
-                    "error", log);
+            RestApiUtil.handleInternalServerError(
+                    "Error while updating the client certificate for the alias " + alias + " due to an internal "
+                            + "server " + "error", log);
         } catch (IOException e) {
-            RestApiUtil.handleInternalServerError("Error while encoding certificate", log);
+            RestApiUtil
+                    .handleInternalServerError("Error while encoding client certificate for the alias " + alias, log);
         } catch (URISyntaxException e) {
-            RestApiUtil.handleInternalServerError("Error while generating the resource location URI for alias '" +
-                    alias + "'", log);
+            RestApiUtil.handleInternalServerError(
+                    "Error while generating the resource location URI for alias '" + alias + "'", log);
         }
         return null;
     }
     @Override
-    public Response clientCertificatesGet(Integer limit,Integer offset,String alias,String apiId){
+    public Response clientCertificatesGet(Integer limit,Integer offset,String alias, String apiId){
         limit = limit != null ? limit : RestApiConstants.PAGINATION_LIMIT_DEFAULT;
         offset = offset != null ? offset : RestApiConstants.PAGINATION_OFFSET_DEFAULT;
 
-        List<CertificateMetadataDTO> certificates;
+        List<ClientCertificateDTO> certificates = new ArrayList<>();
         String userName = RestApiUtil.getLoggedInUsername();
         int tenantId = APIUtil.getTenantId(userName);
         String query = CertificateRestApiUtils.buildQueryString("alias", alias, "apiId", apiId);
@@ -175,26 +182,14 @@ public class ClientCertificatesApiServiceImpl extends ClientCertificatesApiServi
         try {
             APIProvider apiProvider = RestApiUtil.getLoggedInUserProvider();
             int totalCount = apiProvider.getClientCertificateCount(tenantId);
+            API api = apiProvider.getAPIbyUUID(apiId, RestApiUtil.getLoggedInUserTenantDomain());
 
-
-
-            if (StringUtils.isNotEmpty(alias) || StringUtils.isNotEmpty(apiId)) {
-               if (StringUtils.)
-                if (log.isDebugEnabled()) {
-                    log.debug(String.format("Call the search certificate api to get the filtered certificates for " +
-                            "tenant id : %d, alias : %s, and endpoint : %s", tenantId, alias, endpoint));
-                }
-                certificates = apiProvider.searchCertificates(tenantId, alias, endpoint);
-            } else {
-                if (log.isDebugEnabled()) {
-                    log.debug(String.format("There is no query parameters provided. So, retrieve all the certificates" +
-                            " belongs to the tenantId : %d", tenantId));
-                }
-                certificates = apiProvider.getCertificates(userName);
+            if (totalCount > 0) {
+                certificates = apiProvider.searchClientCertificates(tenantId, alias, api.getId());
             }
 
-            CertificatesDTO certificatesDTO = CertificateRestApiUtils.getPaginatedCertificates(certificates, limit,
-                    offset, query);
+            ClientCertificatesDTO certificatesDTO = CertificateRestApiUtils
+                    .getPaginatedClientCertificates(certificates, limit, offset, query);
 
             APIListPaginationDTO paginationDTO = new APIListPaginationDTO();
             paginationDTO.setLimit(limit);
@@ -204,7 +199,7 @@ public class ClientCertificatesApiServiceImpl extends ClientCertificatesApiServi
             certificatesDTO.setPagination(paginationDTO);
             return Response.status(Response.Status.OK).entity(certificatesDTO).build();
         } catch (APIManagementException e) {
-            RestApiUtil.handleInternalServerError("Error while retrieving the certificates.", e, log);
+            RestApiUtil.handleInternalServerError("Error while retrieving the client certificates.", e, log);
         }
         return null;
     }

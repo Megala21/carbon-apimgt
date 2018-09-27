@@ -17,6 +17,7 @@
  */
 package org.wso2.carbon.apimgt.impl.certificatemgt;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.wso2.carbon.apimgt.api.APIManagementException;
@@ -306,8 +307,13 @@ public class CertificateManagerImpl implements CertificateManager {
 
     @Override
     public List<ClientCertificateDTO> getClientCertificates(int tenantId, String alias,
-            APIIdentifier apiIdentifier) {
-        return null;
+            APIIdentifier apiIdentifier) throws APIManagementException {
+        try {
+            return CertificateMgtDAO.getInstance().getClientCertificates(tenantId, alias, apiIdentifier);
+        } catch (CertificateManagementException e) {
+            throw new APIManagementException(
+                    "Error while retrieving client certificate information for the tenant : " + tenantId, e);
+        }
     }
 
     @Override
@@ -362,20 +368,27 @@ public class CertificateManagerImpl implements CertificateManager {
     }
 
     @Override
-    public boolean updateClientCertificate(String certificate, String alias, int tenantId) throws APIManagementException {
-        ResponseCode responseCode = certificateMgtUtils.validateCertificate(certificate);
-        boolean isSuccess = false;
+    public ResponseCode updateClientCertificate(String certificate, String alias, String tier, int tenantId) throws APIManagementException {
+        ResponseCode responseCode = ResponseCode.INTERNAL_SERVER_ERROR;
+
+        if (StringUtils.isNotEmpty(certificate)) {
+            responseCode = certificateMgtUtils.validateCertificate(certificate);
+        }
 
         try {
             if (responseCode.getResponseCode() == ResponseCode.SUCCESS.getResponseCode()) {
-                isSuccess = certificateMgtDAO.updateClientCertificate(certificate, alias + "_" + tenantId, tenantId);
+                boolean isSuccess = certificateMgtDAO
+                        .updateClientCertificate(certificate, alias + "_" + tenantId, tier, tenantId);
+                if (isSuccess) {
+                    responseCode = ResponseCode.SUCCESS;
+                }
             }
         } catch (CertificateManagementException e) {
             throw new APIManagementException(
                     "Certificate management exception while trying to update the certificate" + " of alias " + alias
                             + " of tenant " + tenantId, e);
         }
-        return isSuccess;
+        return responseCode;
     }
 
 

@@ -25,8 +25,11 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.wso2.carbon.apimgt.api.APIManagementException;
 import org.wso2.carbon.apimgt.api.dto.CertificateMetadataDTO;
+import org.wso2.carbon.apimgt.api.dto.ClientCertificateDTO;
 import org.wso2.carbon.apimgt.rest.api.publisher.dto.CertMetadataDTO;
 import org.wso2.carbon.apimgt.rest.api.publisher.dto.CertificatesDTO;
+import org.wso2.carbon.apimgt.rest.api.publisher.dto.ClientCertMetadataDTO;
+import org.wso2.carbon.apimgt.rest.api.publisher.dto.ClientCertificatesDTO;
 import org.wso2.carbon.apimgt.rest.api.util.RestApiConstants;
 import org.wso2.carbon.apimgt.rest.api.util.utils.RestApiUtil;
 
@@ -79,13 +82,6 @@ public class CertificateRestApiUtils {
         return null;
 
     }
-
-   /* public static String generateEncodedCertificate(InputStream certificateInputStream) throws IOException {
-
-        byte[] certificateBytes = IOUtils.toByteArray(certificateInputStream);
-        byte[] encodedCert = Base64.encodeBase64(certificateBytes);
-        return new String(encodedCert, StandardCharset.UTF_8);
-    }*/
 
     /**
      * Get the paginated list of certificates based on the limit and offset values provided.
@@ -148,6 +144,61 @@ public class CertificateRestApiUtils {
         return certificatesDTO;
     }
 
+    public static ClientCertificatesDTO getPaginatedClientCertificates(
+            List<ClientCertificateDTO> clientCertificateDTOList, int limit, int offset, String query) {
+
+        if (log.isDebugEnabled()) {
+            log.debug(String.format(
+                    "Filter the client certificates based on the pagination parameters, limit = %d and" + "offset = %d",
+                    limit, offset));
+        }
+
+        int certCount = clientCertificateDTOList.size();
+        List<ClientCertMetadataDTO> clientCertificateList = new ArrayList<>();
+
+        ClientCertificatesDTO certificatesDTO = new ClientCertificatesDTO();
+        certificatesDTO.setCount(certCount > limit ? limit : certCount);
+
+        // If the provided offset value exceeds the offset, reset the offset to default.
+        if (offset > certCount) {
+            offset = RestApiConstants.PAGINATION_OFFSET_DEFAULT;
+        }
+
+        // Select only the set of Certificates which matches the given limit and offset values.
+        int start = offset;
+        int end = certCount > start + limit ? start + limit : certCount;
+        for (int i = start; i < end; i++) {
+            ClientCertMetadataDTO clientCertMetadataDTO = new ClientCertMetadataDTO();
+            ClientCertificateDTO clientCertificateDTO = clientCertificateDTOList.get(i);
+            clientCertMetadataDTO.setAlias(clientCertificateDTO.getAlias());
+            clientCertMetadataDTO.setApiId(clientCertificateDTO.getApiIdentifier().toString());
+            clientCertMetadataDTO.setTier(clientCertificateDTO.getTierName());
+            clientCertificateList.add(clientCertMetadataDTO);
+        }
+
+        Map<String, Integer> paginatedParams = RestApiUtil.getPaginationParams(offset, limit, certCount);
+        String paginatedPrevious = "";
+        String paginatedNext = "";
+
+        if (paginatedParams.get(RestApiConstants.PAGINATION_PREVIOUS_OFFSET) != null) {
+            paginatedPrevious = getClientCertificatesPaginatedURL(
+                    paginatedParams.get(RestApiConstants.PAGINATION_PREVIOUS_OFFSET),
+                    paginatedParams.get(RestApiConstants.PAGINATION_PREVIOUS_LIMIT), query);
+        }
+
+        if (paginatedParams.get(RestApiConstants.PAGINATION_NEXT_OFFSET) != null) {
+            paginatedNext = getClientCertificatesPaginatedURL(
+                    paginatedParams.get(RestApiConstants.PAGINATION_NEXT_OFFSET),
+                    paginatedParams.get(RestApiConstants.PAGINATION_NEXT_LIMIT), query);
+        }
+
+        certificatesDTO.setNext(paginatedNext);
+        certificatesDTO.setPrevious(paginatedPrevious);
+        certificatesDTO.setCount(clientCertificateList.size());
+        certificatesDTO.setCertificates(clientCertificateList);
+        return certificatesDTO;
+    }
+
     /**
      * Get the paginated certificate urls.
      *
@@ -159,6 +210,23 @@ public class CertificateRestApiUtils {
     private static String getCertificatesPaginatedURL(Integer offset, Integer limit, String query) {
 
         String paginatedURL = RestApiConstants.CERTS_GET_PAGINATED_URL;
+        paginatedURL = paginatedURL.replace(RestApiConstants.LIMIT_PARAM, String.valueOf(limit));
+        paginatedURL = paginatedURL.replace(RestApiConstants.OFFSET_PARAM, String.valueOf(offset));
+        paginatedURL = paginatedURL.replace(RestApiConstants.QUERY_PARAM, query);
+        return paginatedURL;
+    }
+
+    /**
+     * Get the paginated certificate urls.
+     *
+     * @param offset : The offset
+     * @param limit  : The limit parameter.
+     * @param query  : The provided query string
+     * @return :
+     */
+    private static String getClientCertificatesPaginatedURL(Integer offset, Integer limit, String query) {
+
+        String paginatedURL = RestApiConstants.CLIENT_CERTS_GET_PAGINATED_URL;
         paginatedURL = paginatedURL.replace(RestApiConstants.LIMIT_PARAM, String.valueOf(limit));
         paginatedURL = paginatedURL.replace(RestApiConstants.OFFSET_PARAM, String.valueOf(offset));
         paginatedURL = paginatedURL.replace(RestApiConstants.QUERY_PARAM, query);

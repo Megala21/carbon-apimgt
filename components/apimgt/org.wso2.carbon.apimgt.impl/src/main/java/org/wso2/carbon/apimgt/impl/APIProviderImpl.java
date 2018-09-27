@@ -5308,7 +5308,8 @@ class APIProviderImpl extends AbstractAPIManager implements APIProvider {
 
     public List<ClientCertificateDTO> searchClientCertificates(int tenantId, String alias,
             APIIdentifier apiIdentifier) throws APIManagementException {
-        return null;
+        return CertificateManagerFactory.getCertificateManagerInstance()
+                .getClientCertificates(tenantId, alias, apiIdentifier);
     }
 
     @Override
@@ -5348,10 +5349,14 @@ class APIProviderImpl extends AbstractAPIManager implements APIProvider {
 
 
     @Override
-    public boolean updateClientCertificate(String certificate, String alias, APIIdentifier APIIdentifier, int tenantId) throws APIManagementException {
+    public int updateClientCertificate(String certificate, String alias, APIIdentifier apiIdentifier,
+            String tier, int tenantId) throws APIManagementException {
 
         CertificateManager certificateManager = CertificateManagerFactory.getCertificateManagerInstance();
-        return certificateManager.updateClientCertificate(certificate, alias, tenantId);
+        ResponseCode responseCode = certificateManager.updateClientCertificate(certificate, alias, tier, tenantId);
+        return responseCode != null ?
+                responseCode.getResponseCode() :
+                ResponseCode.INTERNAL_SERVER_ERROR.getResponseCode();
     }
 
     @Override

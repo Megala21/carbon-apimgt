@@ -181,21 +181,37 @@ public class CertificateMgtDAO {
         return result;
     }
 
-    public boolean updateClientCertificate(String certificate, String alias, int tenantId)
+    public boolean updateClientCertificate(String certificate, String alias, String tier, int tenantId)
             throws CertificateManagementException {
         boolean result = false;
         Connection connection = null;
         PreparedStatement preparedStatement = null;
         String updateCertQuery = SQLConstants.ClientCertificateConstants.UPDATE_CERTIFICATE;
 
+        if (StringUtils.isNotEmpty(certificate) && StringUtils.isNotEmpty(tier)) {
+            updateCertQuery = SQLConstants.ClientCertificateConstants.UPDATE_CERTIFICATE_AND_TIER;
+        } else if (StringUtils.isNotEmpty(tier)) {
+            updateCertQuery = SQLConstants.ClientCertificateConstants.UPDATE_TIER;
+        }
+
         try {
             connection = APIMgtDBUtil.getConnection();
             initialAutoCommit = connection.getAutoCommit();
             connection.setAutoCommit(false);
             preparedStatement = connection.prepareStatement(updateCertQuery);
-            preparedStatement.setBlob(1, getInputStream(certificate));
-            preparedStatement.setInt(2, tenantId);
-            preparedStatement.setString(3, alias + "_" + tenantId);
+
+            int index = 1;
+
+            if (StringUtils.isNotEmpty(certificate)) {
+                preparedStatement.setBlob(index, getInputStream(certificate));
+                index++;
+            }
+            if (StringUtils.isNotEmpty(tier)) {
+                preparedStatement.setString(index, tier);
+                index++;
+            }
+            preparedStatement.setInt(index, tenantId);
+            preparedStatement.setString(index, alias + "_" + tenantId);
             result = preparedStatement.executeUpdate() == 1;
             connection.commit();
         } catch (SQLException e) {
@@ -349,22 +365,16 @@ public class CertificateMgtDAO {
         Connection connection = null;
         PreparedStatement preparedStatement = null;
         ResultSet resultSet = null;
-        CertificateMetadataDTO certificateMetadataDTO;
-        List<CertificateMetadataDTO> certificateMetadataList = new ArrayList<>();
-        String selectQuery = SQLConstants.ClientCertificateConstants.SELECT_CERTIFICATE_FOR_TENANT;
         List<ClientCertificateDTO> clientCertificateDTOS = new ArrayList<>();
+        String selectQuery = SQLConstants.ClientCertificateConstants.SELECT_CERTIFICATE_FOR_TENANT;
 
-        if (apiIdentifier != null && alias == null) {
-            return getClientCertificates(apiIdentifier, tenantId);
-        }
-
-        if (alias != null) {
+        if (StringUtils.isNotEmpty(alias) && apiIdentifier != null) {
+            selectQuery = SQLConstants.ClientCertificateConstants.SELECT_CERTIFICATE_FOR_TENANT_ALIAS_APIID;
+        } else if (StringUtils.isNotEmpty(alias)) {
             selectQuery = SQLConstants.ClientCertificateConstants.SELECT_CERTIFICATE_FOR_TENANT_ALIAS;
+        } else if (apiIdentifier != null) {
+            selectQuery = SQLConstants.ClientCertificateConstants.SELECT_CERTIFICATE_FOR_TENANT_APIID;
         }
-        if (apiIdentifier != null) {
-            selectQuery = SQLConstants.ClientCertificateConstants.SELECT_CERTIFICATE_FOR_ALIAS_APIID;
-        }
-
         try {
             connection = APIMgtDBUtil.getConnection();
             initialAutoCommit = connection.getAutoCommit();
@@ -374,30 +384,43 @@ public class CertificateMgtDAO {
                 apiId = ApiMgtDAO.getInstance().getAPIID(apiIdentifier, connection);
             }
 
+            int index = 1;
             preparedStatement = connection.prepareStatement(selectQuery);
-            preparedStatement.setBoolean(1, false);
-            preparedStatement.setInt(2, tenantId);
+            preparedStatement.setBoolean(index, false);
+            index++;
+            preparedStatement.setInt(index, tenantId);
+            index++;
             if (alias != null) {
-                preparedStatement.setString(3, alias);
+                preparedStatement.setString(index, alias);
+                index++;
             }
             if (apiIdentifier != null) {
-                preparedStatement.setInt(4, apiId);
+                preparedStatement.setInt(index, apiId);
             }
             resultSet = preparedStatement.executeQuery();
 
-
             while (resultSet.next()) {
-                int filteredAPI = resultSet.getInt("API_ID");
-                if (apiId == 0 || filteredAPI == apiId) {
-                    ClientCertificateDTO clientCertificateDTO = new ClientCertificateDTO();
-                    clientCertificateDTO.setTierName(resultSet.getString("TIER_NAME"));
+                ClientCertificateDTO clientCertificateDTO = new ClientCertificateDTO();
+                clientCertificateDTO.setTierName(resultSet.getString("TIER_NAME"));
+                alias = resultSet.getString("ALIAS");
+                int lastIndex = alias.lastIndexOf("_" + tenantId);
+                alias = alias.substring(0, lastIndex);
+                clientCertificateDTO.setAlias(alias);
+                if (apiIdentifier == null) {
+                    apiIdentifier = new APIIdentifier(APIUtil.replaceEmailDomain(resultSet.getString("API_PROVIDER")),
+                            resultSet.getString("API_VERSION"), resultSet.getString("API_NAME"));
+
                 }
+                clientCertificateDTO.setApiIdentifier(apiIdentifier);
+                clientCertificateDTOS.add(clientCertificateDTO);
             }
             connection.commit();
         } catch (SQLException e) {
-            handleException("Error while retrieving certificate metadata.", e);
+            handleException("Error while searching client certificate details for the tenant " + tenantId, e);
         } catch (APIManagementException e) {
-            e.printStackTrace();
+            handleException(
+                    "API Management Exception while searching client certificate details for the tenant " + tenantId,
+                    e);
         } finally {
             APIMgtDBUtil.setAutoCommit(connection, initialAutoCommit);
             APIMgtDBUtil.closeAllConnections(preparedStatement, connection, resultSet);

@@ -97,11 +97,12 @@ public class ClientCertificatesApi  {
         
         @io.swagger.annotations.ApiResponse(code = 500, message = "Internal Server Error\n") })
 
-    public Response clientCertificatesAliasPut(@ApiParam(value = "The certificate that needs to be uploaded.") @Multipart(value = "certificate") InputStream certificateInputStream,
-    @ApiParam(value = "The certificate that needs to be uploaded. : details") @Multipart(value = "certificate" ) Attachment certificateDetail,
-    @ApiParam(value = "Alias for the certificate",required=true ) @PathParam("alias")  String alias)
+    public Response clientCertificatesAliasPut(@ApiParam(value = "Alias for the certificate",required=true ) @PathParam("alias")  String alias,
+    @ApiParam(value = "The certificate that needs to be uploaded.") @Multipart(value = "certificate", required = false) InputStream certificateInputStream,
+    @ApiParam(value = "The certificate that needs to be uploaded. : details") @Multipart(value = "certificate" , required = false) Attachment certificateDetail,
+    @ApiParam(value = "The tier of the certificate" )@Multipart(value = "tier", required = false)  String tier)
     {
-    return delegate.clientCertificatesAliasPut(certificateInputStream,certificateDetail,alias);
+    return delegate.clientCertificatesAliasPut(alias,certificateInputStream,certificateDetail,tier);
     }
     @GET
     

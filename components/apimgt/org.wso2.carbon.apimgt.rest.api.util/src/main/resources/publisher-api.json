@@ -2792,7 +2792,7 @@
                         "in": "formData",
                         "name": "certificate",
                         "description": "The certificate that needs to be uploaded.",
-                        "required": true,
+                        "required": false,
                         "type": "file"
                     },
                     {
@@ -2800,6 +2800,13 @@
                         "name": "alias",
                         "description": "Alias for the certificate",
                         "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "in": "formData",
+                        "name": "tier",
+                        "description": "The tier of the certificate",
+                        "required": false,
                         "type": "string"
                     }
                 ],
