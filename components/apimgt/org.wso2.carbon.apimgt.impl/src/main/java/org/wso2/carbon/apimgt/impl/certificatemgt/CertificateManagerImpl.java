@@ -92,6 +92,7 @@ public class CertificateManagerImpl implements CertificateManager {
             String tierName, int tenantId) {
         ResponseCode responseCode;
         try {
+            alias = alias + "_" + tenantId;
             responseCode = certificateMgtUtils.validateCertificate(alias + "_" + tenantId, certificate);
             if (certificateMgtDAO.checkWhetherAliasExist(alias + "_" + tenantId)) {
                 responseCode = ResponseCode.ALIAS_EXISTS_IN_TRUST_STORE;
@@ -140,7 +141,8 @@ public class CertificateManagerImpl implements CertificateManager {
     @Override
     public ResponseCode deleteClientCertificateFromParentNode(APIIdentifier apiIdentifier, String alias, int tenantId) {
         try {
-            boolean removeFromDB = certificateMgtDAO.deleteClientCertificate(apiIdentifier, alias, tenantId);
+            boolean removeFromDB = certificateMgtDAO
+                    .deleteClientCertificate(apiIdentifier, alias + "_" + tenantId, tenantId);
             if (removeFromDB) {
                 return ResponseCode.SUCCESS;
             } else {
@@ -163,11 +165,17 @@ public class CertificateManagerImpl implements CertificateManager {
 
     @Override
     public boolean addClientCertificateToGateway(String certificate, String alias) {
-
         return addCertificateToListenerOrSenderProfile(certificate, alias, true);
     }
 
-
+    /**
+     * To add the public certificate to the relevant listener of sender profile.
+     *
+     * @param certificate Relevant certificate that need to be added to the trust store of gateway.
+     * @param alias       Alias of the certificate.
+     * @param isListener  To indicate whether the listener profile need to be reloaded.
+     * @return true if the addition to gateway certificate addition succeeded.
+     */
     private  boolean addCertificateToListenerOrSenderProfile(String certificate, String alias, boolean isListener) {
         boolean result;
         ResponseCode responseCode = certificateMgtUtils.addCertificateToTrustStore(certificate, alias);
@@ -177,7 +185,7 @@ public class CertificateManagerImpl implements CertificateManager {
         } else {
             result = responseCode != ResponseCode.INTERNAL_SERVER_ERROR;
         }
-        boolean fileUpdateSucceed = false;
+        boolean fileUpdateSucceed;
         if (isListener) {
             fileUpdateSucceed = touchSSLListenerConfigFile();
         } else {
@@ -185,8 +193,8 @@ public class CertificateManagerImpl implements CertificateManager {
         }
         result = result && fileUpdateSucceed;
         if (result) {
-            log.info("The certificate with Alias '" + alias + "' is successfully added to the Gateway " +
-                    "Trust Store.");
+            log.info("The certificate with Alias '" + alias + "' is successfully added to the Gateway "
+                    + "Trust Store.");
         } else {
             log.error("Error adding the certificate with Alias '" + alias + "' to the Gateway Trust Store");
         }
@@ -260,17 +268,6 @@ public class CertificateManagerImpl implements CertificateManager {
     }
 
     @Override
-    public List<ClientCertificateDTO> getClientCertificates(APIIdentifier apiIdentifier, int tenantId) {
-        List<ClientCertificateDTO> clientCertificateDTOList = null;
-        try {
-            clientCertificateDTOList = certificateMgtDAO.getClientCertificates(apiIdentifier, tenantId);
-        } catch (CertificateManagementException e) {
-            log.error("Error while retrieving client certificates for the api " + apiIdentifier.toString(), e);
-        }
-        return clientCertificateDTOList;
-    }
-
-    @Override
     public List<CertificateMetadataDTO> getCertificates(int tenantId) {
 
         List<CertificateMetadataDTO> certificates = null;
@@ -306,9 +303,12 @@ public class CertificateManagerImpl implements CertificateManager {
     }
 
     @Override
-    public List<ClientCertificateDTO> getClientCertificates(int tenantId, String alias,
+    public List<ClientCertificateDTO> searchClientCertificates(int tenantId, String alias,
             APIIdentifier apiIdentifier) throws APIManagementException {
         try {
+            if (StringUtils.isNotEmpty(alias)) {
+                alias = alias + "_" + tenantId;
+            }
             return CertificateMgtDAO.getInstance().getClientCertificates(tenantId, alias, apiIdentifier);
         } catch (CertificateManagementException e) {
             throw new APIManagementException(
@@ -331,17 +331,6 @@ public class CertificateManagerImpl implements CertificateManager {
                     "' and alias '" + alias + "'");
         }
         return certificateMetadataList.size() == 1; // The list would not be null so we check the size.
-    }
-
-    @Override
-    public ClientCertificateDTO getClientCertificate(int tenantId, String alias) throws APIManagementException {
-        try {
-            return CertificateMgtDAO.getInstance().getClientCertificate(alias + "_" + tenantId, tenantId);
-        } catch (CertificateManagementException e) {
-            throw new APIManagementException(
-                    "Error while retrieving API related with client certiifcate alias " + alias + " for the tenant "
-                            + tenantId, e);
-        }
     }
 
     @Override
@@ -370,11 +359,9 @@ public class CertificateManagerImpl implements CertificateManager {
     @Override
     public ResponseCode updateClientCertificate(String certificate, String alias, String tier, int tenantId) throws APIManagementException {
         ResponseCode responseCode = ResponseCode.INTERNAL_SERVER_ERROR;
-
         if (StringUtils.isNotEmpty(certificate)) {
-            responseCode = certificateMgtUtils.validateCertificate(certificate);
+            responseCode = certificateMgtUtils.validateCertificate(null, certificate);
         }
-
         try {
             if (responseCode.getResponseCode() == ResponseCode.SUCCESS.getResponseCode()) {
                 boolean isSuccess = certificateMgtDAO

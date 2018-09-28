@@ -548,7 +548,7 @@ public class APIGatewayAdminClient extends AbstractAPIGatewayAdminClient {
         try {
             return apiGatewayAdminStub.deleteClientCertificate(alias);
         } catch (RemoteException e) {
-            throw new AxisFault("Error while adding certificate file", e);
+            throw new AxisFault("Error while adding deleting client certificate file " + alias, e);
         }
     }
 

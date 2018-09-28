@@ -379,7 +379,6 @@ public class APIManagerComponent {
                                     contains(LABELS)) {
                                 updateRegistryResourceContent(resource, systemRegistry, rxtDir, rxtPath, resourcePath);
                             }
-
                             // check whether the resource contains a section called 'API Security' and add it
                             if (!RegistryUtils.decodeBytes((byte[]) resource.getContent()).
                                     contains(API_SECURITY)) {

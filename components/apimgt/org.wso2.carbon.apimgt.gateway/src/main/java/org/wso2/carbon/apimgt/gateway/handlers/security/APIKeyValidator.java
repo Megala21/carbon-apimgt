@@ -49,7 +49,13 @@ import org.wso2.carbon.utils.multitenancy.MultitenantConstants;
 
 import javax.cache.Cache;
 import javax.cache.Caching;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
 
 /**
  * This class is used to validate a given API key against a given API context and a version.
@@ -75,7 +81,6 @@ public class APIKeyValidator {
 
     private static boolean resourceCacheInit = false;
 
-    private static boolean gatewayCertificateCacheInit = false;
     protected Log log = LogFactory.getLog(getClass());
 
     public APIKeyValidator(AxisConfiguration axisConfig) {
@@ -96,8 +101,6 @@ public class APIKeyValidator {
         this.getResourceCache();
 
         this.getGatewayTokenCache();
-
-        this.getGatewayCertificateCache();
     }
 
     protected String getKeyValidatorClientType() {
@@ -145,30 +148,6 @@ public class APIKeyValidator {
             }
         }
         return getCacheFromCacheManager(APIConstants.GATEWAY_TOKEN_CACHE_NAME);
-    }
-
-    /**
-     * To get the gateway certificate cache which is used to store the certificate tier information, cache key will
-     * be {serialnumber}_{apiidentifier}.
-     *
-     * @return gateway certificate cache.
-     */
-    protected Cache getGatewayCertificateCache() {
-        String apimGWCacheExpiry = getApiManagerConfiguration().getFirstProperty(APIConstants.TOKEN_CACHE_EXPIRY);
-        if (!gatewayCertificateCacheInit) {
-            gatewayCertificateCacheInit = true;
-            certificateCacheKeys = new HashMap<>();
-            if (apimGWCacheExpiry != null) {
-                return getCache(APIConstants.API_MANAGER_CACHE_MANAGER, APIConstants.GATEWAY_CERTIFICATE_CACHE_NAME,
-                        Long.parseLong(apimGWCacheExpiry), Long.parseLong(apimGWCacheExpiry));
-            } else {
-                long defaultCacheTimeout = getDefaultCacheTimeout();
-                return getCache(APIConstants.API_MANAGER_CACHE_MANAGER, APIConstants.GATEWAY_CERTIFICATE_CACHE_NAME,
-                        defaultCacheTimeout, defaultCacheTimeout);
-
-            }
-        }
-        return getCacheFromCacheManager(APIConstants.GATEWAY_CERTIFICATE_CACHE_NAME);
     }
 
     protected Cache getInvalidTokenCache() {
@@ -351,56 +330,18 @@ public class APIKeyValidator {
                 matchingResource, httpVerb);
     }
 
+    /**
+     * To get the subscription tier information related with particular certificate and API
+     *
+     * @param apiIdentifier         Relevant API Identifier.
+     * @param certificateIdentifier Certificate Identifier.
+     * @return Relevant subscription tier information.
+     * @throws APISecurityException API Security Exception.
+     */
     protected CertificateTierDTO getCertificateTierInformation(APIIdentifier apiIdentifier,
             String certificateIdentifier) throws APISecurityException {
-
-        CertificateTierDTO certificateTierDTO;
-        String key = certificateIdentifier + "_" + apiIdentifier.toString();
-        if (gatewayKeyCacheEnabled) {
-            List<String> listOfCertificates = APIUtil.getUpdatedCertificates();
-            if (listOfCertificates != null) {
-                for (String certficateIdentifier : listOfCertificates) {
-                    cleanUpCertificateCache(certificateIdentifier);
-                }
-            }
-            //Get the certificate tier information from cache.
-            certificateTierDTO = (CertificateTierDTO) getGatewayCertificateCache().get(key);
-            if (certificateTierDTO != null) {
-                return certificateTierDTO;
-            }
-        }
-        certificateTierDTO = dataStore.getCertificateTierInformation(apiIdentifier, certificateIdentifier);
-
-        if (gatewayKeyCacheEnabled) {
-            getGatewayCertificateCache().put(key, certificateTierDTO);
-            ArrayList<String> cacheKeys = certificateCacheKeys.get(certificateIdentifier);
-            if (cacheKeys == null) {
-                cacheKeys = new ArrayList<>();
-            }
-            cacheKeys.add(key);
-        }
-        return certificateTierDTO;
-    }
-
-    /**
-     * To clean up certificate cache when there is an update of certificate in gateway.
-     *
-     * @param certificateIdentifier Relevant certificcate identifier that is updated.
-     */
-    public static void cleanUpCertificateCache(String certificateIdentifier) {
-        ArrayList<String> keys = certificateCacheKeys.get(certificateIdentifier);
-
-        if (gatewayCertificateCacheInit) {
-            if (keys != null) {
-                Cache gatewayCertificateCache = Caching.getCacheManager(APIConstants.API_MANAGER_CACHE_MANAGER)
-                        .getCache(APIConstants.GATEWAY_CERTIFICATE_CACHE_NAME);
-
-                for (String key : keys) {
-                    gatewayCertificateCache.remove(key);
-                }
-            }
-        }
-        certificateCacheKeys.remove(certificateIdentifier);
+        return dataStore
+                .getCertificateTierInformation(apiIdentifier, certificateIdentifier);
     }
 
     public void cleanup() {

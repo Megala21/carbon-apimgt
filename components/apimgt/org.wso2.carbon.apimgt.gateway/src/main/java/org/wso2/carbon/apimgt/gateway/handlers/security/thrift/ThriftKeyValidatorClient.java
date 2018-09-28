@@ -135,16 +135,13 @@ public class ThriftKeyValidatorClient {
      */
     public CertificateTierDTO getCertificateTierInformation(APIIdentifier apiIdentifier,
             String certificateIdentifier) throws APISecurityException {
-
         org.wso2.carbon.apimgt.impl.generated.thrift.CertificateTierDTO thriftDTO;
         try {
             thriftDTO = keyValClient
                     .getCertificateTierInformation(getGeneratedIdentifier(apiIdentifier), certificateIdentifier,
                             sessionId);
-
         } catch (Exception e) {
             try {
-
                 log.warn("Login failed.. Authenticating again..");
                 sessionId = thriftUtils.reLogin();
                 //we re-initialize the thrift client in case open sockets have been closed due to
@@ -153,7 +150,6 @@ public class ThriftKeyValidatorClient {
                 thriftDTO = keyValClient
                         .getCertificateTierInformation(getGeneratedIdentifier(apiIdentifier), certificateIdentifier,
                                 sessionId);
-
             } catch (Exception e1) {
                 throw new APISecurityException(APISecurityConstants.API_AUTH_GENERAL_ERROR, e1.getMessage(), e1);
             }
@@ -183,7 +179,8 @@ public class ThriftKeyValidatorClient {
      * @param apiIdentifier APIIdentifier that need to be converted.
      * @return Converted API Identifier.
      */
-    private org.wso2.carbon.apimgt.impl.generated.thrift.APIIdentifier getGeneratedIdentifier(APIIdentifier apiIdentifier) {
+    private org.wso2.carbon.apimgt.impl.generated.thrift.APIIdentifier getGeneratedIdentifier(
+            APIIdentifier apiIdentifier) {
         org.wso2.carbon.apimgt.impl.generated.thrift.APIIdentifier generatedIdentifier =
                 new org.wso2.carbon.apimgt.impl.generated.thrift.APIIdentifier();
         generatedIdentifier.setApiName(apiIdentifier.getApiName());

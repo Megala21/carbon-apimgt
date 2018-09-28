@@ -307,7 +307,7 @@ public class APIGatewayManager {
                 } catch (EndpointAdminException ex) {
                     log.error("Error occurred when deleting endpoint from gateway" + environmentName, ex);
                     failedEnvironmentsMap.put(environmentName, ex.getMessage());
-                } catch (CertificateManagementException | APIManagementException ex) {
+                } catch (CertificateManagementException ex) {
                     log.error("Error occurred when deleting certificate from gateway" + environmentName, ex);
                     failedEnvironmentsMap.put(environmentName, ex.getMessage());
                 }
@@ -563,11 +563,11 @@ public class APIGatewayManager {
             throws CertificateManagementException, AxisFault {
         int tenantId = APIUtil.getTenantIdFromTenantDomain(tenantDomain);
         List<ClientCertificateDTO> clientCertificateDTOList = CertificateMgtDAO.getInstance()
-                .getClientCertificates(api.getId(), tenantId);
+                .getClientCertificates(tenantId, null, api.getId());
         if (clientCertificateDTOList != null) {
             for (ClientCertificateDTO clientCertificateDTO : clientCertificateDTOList) {
-                client.addClientCertificate(clientCertificateDTO.getCertificate(), clientCertificateDTO.getAlias() +
-                        "_" + tenantId);
+                client.addClientCertificate(clientCertificateDTO.getCertificate(),
+                        clientCertificateDTO.getAlias() + "_" + tenantId);
             }
         }
     }
@@ -580,8 +580,8 @@ public class APIGatewayManager {
      * @param tenantDomain Tenant domain.
      */
     private void updateClientCertificates(APIGatewayAdminClient client, API api, String tenantDomain)
-            throws CertificateManagementException, AxisFault, APIManagementException {
-        int tenantId = getTenantId(tenantDomain);
+            throws CertificateManagementException, AxisFault {
+        int tenantId = APIUtil.getTenantIdFromTenantDomain(tenantDomain);
         List<ClientCertificateDTO> clientCertificateDTOList = CertificateMgtDAO.getInstance()
                 .getDeletedClientCertificates(api.getId(), tenantId);
         if (clientCertificateDTOList != null) {
@@ -589,7 +589,7 @@ public class APIGatewayManager {
                 client.deleteClientCertificate(clientCertificateDTO.getAlias());
             }
         }
-        clientCertificateDTOList = CertificateMgtDAO.getInstance().getClientCertificates(api.getId(), tenantId);
+        clientCertificateDTOList = CertificateMgtDAO.getInstance().getClientCertificates(tenantId, null, api.getId());
         if (clientCertificateDTOList != null) {
             for (ClientCertificateDTO clientCertificateDTO : clientCertificateDTOList) {
                 client.addClientCertificate(clientCertificateDTO.getCertificate(),
@@ -603,42 +603,18 @@ public class APIGatewayManager {
      *
      * @param api          Relevant API related with teh removed certificate.
      * @param tenantDomain Tenant domain of the API.
-     * @throws CertificateManagementException Certificate Management Exception.
      */
     private void updateRemovedClientCertificates(API api, String tenantDomain) {
         try {
-            CertificateMgtDAO.getInstance()
-                    .updateRemovedCertificatesFromGateways(api.getId(), getTenantId(tenantDomain));
+            CertificateMgtDAO.getInstance().updateRemovedCertificatesFromGateways(api.getId(),
+                    APIUtil.getTenantIdFromTenantDomain(tenantDomain));
             /* The flow does not need to be blocked, as this failure do not related with updating client certificates
              in gateway, rather updating in database. There is no harm in database having outdated certificate
              information.*/
         } catch (CertificateManagementException e) {
             log.error("Certificate Management Exception while trying to update the remove certificate from gateways "
                     + "for the api " + api.getId() + " for the tenant domain " + tenantDomain, e);
-        } catch (APIManagementException e) {
-            log.error("API Management Exception while trying to get the tenant id of the tenant domain " + tenantDomain,
-                    e);
         }
-    }
-
-    /**
-     * To get the tenant Id of the tenant domain
-     *
-     * @param tenantDomain Relevant tenant domain.
-     * @return tenant ID related with tenant domain.
-     */
-    private int getTenantId(String tenantDomain) throws APIManagementException {
-        int tenantId = MultitenantConstants.SUPER_TENANT_ID;
-        if (StringUtils.isNotEmpty(tenantDomain)) {
-            TenantManager tenantManager = ServiceReferenceHolder.getInstance().getRealmService().getTenantManager();
-            try {
-                tenantId = tenantManager.getTenantId(tenantDomain);
-            } catch (UserStoreException e) {
-                throw new APIManagementException("Error while getting tenant id for the tenant domain " + tenantDomain,
-                        e);
-            }
-        }
-        return tenantId;
     }
 
     /**
@@ -647,15 +623,14 @@ public class APIGatewayManager {
      * @param client       APIGatewayAdmin Client.
      * @param api          Relevant API particular certificate is related with.
      * @param tenantDomain Tenant domain of the API.
-     * @throws APIManagementException         API Management Exception.
      * @throws CertificateManagementException Certificate Management Exception.
      * @throws AxisFault                      AxisFault.
      */
     private void unDeployClientCertificates(APIGatewayAdminClient client, API api, String tenantDomain)
-            throws APIManagementException, CertificateManagementException, AxisFault {
-        int tenantId = getTenantId(tenantDomain);
+            throws CertificateManagementException, AxisFault {
+        int tenantId = APIUtil.getTenantIdFromTenantDomain(tenantDomain);
         List<ClientCertificateDTO> clientCertificateDTOList = CertificateMgtDAO.getInstance()
-                .getClientCertificates(api.getId(), tenantId);
+                .getClientCertificates(tenantId, null, api.getId());
         if (clientCertificateDTOList != null) {
             for (ClientCertificateDTO clientCertificateDTO : clientCertificateDTOList) {
                 client.deleteClientCertificate(clientCertificateDTO.getAlias() + "_" + tenantId);
@@ -790,7 +765,6 @@ public class APIGatewayManager {
             }
         }
     }
-
 
     /**
 	 * Update the custom sequences in gateway

@@ -207,7 +207,7 @@ public class APIAuthenticationHandler extends AbstractHandler implements Managed
             }
 
             if ((isResourceNotProtected(messageContext) && isAuthenticate(messageContext)) ||
-                    ((!isMutualSSLProtected() || isMutalSSLAuthenticationSucceeded(messageContext))
+                    ((!isMutualSSLProtected(messageContext) || isMutalSSLAuthenticationSucceeded(messageContext))
                             && (!isOAuthProtected() || isAuthenticate(messageContext)))) {
                 setAPIParametersToMessageContext(messageContext);
                 return true;
@@ -269,13 +269,20 @@ public class APIAuthenticationHandler extends AbstractHandler implements Managed
     /**
      * To check whether particular API is mutual ssl protected or not.
      *
+     * @param messageContext Specific message context
      * @return true if the API is mutual SSL protected.
      */
-    private boolean isMutualSSLProtected() {
-
+    private boolean isMutualSSLProtected(MessageContext messageContext) {
         boolean isMutualSSLProtected = false;
         if (apiSecurity != null && apiSecurity.contains(APIConstants.GATEWAY_SECURITY_MUTUAL_SSL)) {
             isMutualSSLProtected = true;
+        }
+        if (log.isDebugEnabled()) {
+            if (isMutualSSLProtected) {
+                log.debug("API " + getAPIIdentifier(messageContext) + " is protected with mutual ssl");
+            } else {
+                log.debug("API " + getAPIIdentifier(messageContext) + " is not protected with mutual ssl");
+            }
         }
         return isMutualSSLProtected;
     }
@@ -316,14 +323,18 @@ public class APIAuthenticationHandler extends AbstractHandler implements Managed
          not happened in transport level.*/
         if (sslCertObject == null) {
             if (log.isDebugEnabled()) {
-                log.debug("Mutual SSL authentication has not happened in the transport level, hence API invocation is"
-                        + " not allowed");
+                log.debug("Mutual SSL authentication has not happened in the transport level for the API "
+                        + getAPIIdentifier(messageContext).toString() + "hence API invocation is not allowed");
             }
             throw new APISecurityException(APISecurityConstants.MUTUAL_SSL_VALIDATION_FAILURE,
                     APISecurityConstants.MUTUAL_SSL_VALIDATION_FAILURE_MESSAGE);
         } else {
             // If mutual SSL is the only method used for gateway security, then set the auth context at this point.
             if (!apiSecurity.contains(APIConstants.DEFAULT_API_SECURITY_OAUTH2)) {
+                if (log.isDebugEnabled()) {
+                    log.debug("API " + getAPIIdentifier(messageContext).toString() + " is protected only with mutual "
+                            + "SSL");
+                }
                 setAuthContext(messageContext, sslCertObject);
             }
         }
@@ -375,6 +386,10 @@ public class APIAuthenticationHandler extends AbstractHandler implements Managed
             authContext.setStopOnQuotaReach(certificateTierDTO.isStopOnQuotaReach());
             authContext.setSpikeArrestLimit(certificateTierDTO.getSpikeArrestLimit());
             authContext.setSpikeArrestUnit(certificateTierDTO.getSpikeArrestUnit());
+        }
+        if (log.isDebugEnabled()) {
+            log.debug("Auth context for the API " + getAPIIdentifier(messageContext) + ": Username[" + authContext
+                    .getUsername() + "APIKey[(" + authContext.getApiKey() + "] Tier[" + authContext.getTier() + "]");
         }
     }
 
@@ -604,27 +619,29 @@ public class APIAuthenticationHandler extends AbstractHandler implements Managed
     /**
      * To get the API Identifier of the current API.
      *
-     * @param messageContext Current message context.
+     * @param messageContext Current message context
      * @return API Identifier of currently accessed API.
      */
     private APIIdentifier getAPIIdentifier(MessageContext messageContext) {
         String apiWithversion = (String) messageContext.getProperty(RESTConstants.SYNAPSE_REST_API);
 
         String apiPublisher = (String) messageContext.getProperty(APIMgtGatewayConstants.API_PUBLISHER);
+        String api = null;
         //if publisher is null,extract the publisher from the api_version
-        if (apiPublisher == null) {
+        if (apiPublisher == null && apiWithversion != null) {
             int ind = apiWithversion.indexOf("--");
             apiPublisher = apiWithversion.substring(0, ind);
         }
-        int index = apiWithversion.indexOf("--");
 
-        if (index != -1) {
-            apiWithversion = apiWithversion.substring(index + 2);
+        if (apiWithversion != null) {
+            int index = apiWithversion.indexOf("--");
+            if (index != -1) {
+                apiWithversion = apiWithversion.substring(index + 2);
+            }
+            String[] splitParts = apiWithversion.split(":");
+            api = splitParts[0];
+            apiWithversion = splitParts[1].substring(1);
         }
-
-        String[] splitParts = apiWithversion.split(":");
-        String api = splitParts[0];
-        apiWithversion = splitParts[1].substring(1);
         return new APIIdentifier(apiPublisher, api, apiWithversion);
     }
 

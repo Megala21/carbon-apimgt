@@ -22,7 +22,12 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.thrift.TException;
 import org.wso2.carbon.apimgt.api.dto.ConditionDTO;
 import org.wso2.carbon.apimgt.api.dto.ConditionGroupDTO;
-import org.wso2.carbon.apimgt.impl.generated.thrift.*;
+import org.wso2.carbon.apimgt.impl.generated.thrift.APIIdentifier;
+import org.wso2.carbon.apimgt.impl.generated.thrift.APIKeyValidationInfoDTO;
+import org.wso2.carbon.apimgt.impl.generated.thrift.APIKeyValidationService;
+import org.wso2.carbon.apimgt.impl.generated.thrift.APIManagementException;
+import org.wso2.carbon.apimgt.impl.generated.thrift.CertificateTierDTO;
+import org.wso2.carbon.apimgt.impl.generated.thrift.URITemplate;
 import org.wso2.carbon.apimgt.keymgt.APIKeyMgtException;
 import org.wso2.carbon.context.PrivilegedCarbonContext;
 import org.wso2.carbon.core.AbstractAdmin;
@@ -110,13 +115,7 @@ public class APIKeyValidationServiceImpl extends AbstractAdmin
                     //start tenant flow to stack up any existing carbon context holder base,
                     //and initialize a raw one
                     PrivilegedCarbonContext.startTenantFlow();
-                    if (tenantDomain == null) {
-                    	PrivilegedCarbonContext.getThreadLocalCarbonContext().setTenantDomain(MultitenantConstants.SUPER_TENANT_DOMAIN_NAME,true);
-                    	PrivilegedCarbonContext.getThreadLocalCarbonContext().setTenantId(MultitenantConstants.SUPER_TENANT_ID);
-                    } else {
-                    	PrivilegedCarbonContext.getThreadLocalCarbonContext().setTenantDomain(tenantDomain);
-                    	PrivilegedCarbonContext.getThreadLocalCarbonContext().setTenantId(tenantId);
-                    }
+                    setTenantDetails(tenantId, tenantDomain);
 
                     try {
 
@@ -304,13 +303,7 @@ public class APIKeyValidationServiceImpl extends AbstractAdmin
                     //start tenant flow to stack up any existing carbon context holder base,
                     //and initialize a raw one
                     PrivilegedCarbonContext.startTenantFlow();
-                    if (tenantDomain == null) {
-                        PrivilegedCarbonContext.getThreadLocalCarbonContext().setTenantDomain(MultitenantConstants.SUPER_TENANT_DOMAIN_NAME,true);
-                        PrivilegedCarbonContext.getThreadLocalCarbonContext().setTenantId(MultitenantConstants.SUPER_TENANT_ID);
-                    } else {
-                        PrivilegedCarbonContext.getThreadLocalCarbonContext().setTenantDomain(tenantDomain);
-                        PrivilegedCarbonContext.getThreadLocalCarbonContext().setTenantId(tenantId);
-                    }
+                    setTenantDetails(tenantId, tenantDomain);
 
                     try {
 
@@ -375,8 +368,8 @@ public class APIKeyValidationServiceImpl extends AbstractAdmin
 
     @Override
     public CertificateTierDTO getCertificateTierInformation(APIIdentifier apiIdentifier,
-            String certificateIdentifier, String sessionId) throws
-            org.wso2.carbon.apimgt.impl.generated.thrift.APIKeyMgtException, TException {
+            String certificateIdentifier, String sessionId) throws TException,
+            org.wso2.carbon.apimgt.impl.generated.thrift.APIKeyMgtException {
         CertificateTierDTO certificateTierDTO;
         try {
             if (thriftAuthenticatorService != null && apiKeyValidationService != null) {
@@ -390,20 +383,12 @@ public class APIKeyValidationServiceImpl extends AbstractAdmin
                     try {
                         //start tenant flow to stack up any existing carbon context holder base, and initialize a raw one
                         PrivilegedCarbonContext.startTenantFlow();
-                        if (tenantDomain == null) {
-                            PrivilegedCarbonContext.getThreadLocalCarbonContext()
-                                    .setTenantDomain(MultitenantConstants.SUPER_TENANT_DOMAIN_NAME, true);
-                            PrivilegedCarbonContext.getThreadLocalCarbonContext()
-                                    .setTenantId(MultitenantConstants.SUPER_TENANT_ID);
-                        } else {
-                            PrivilegedCarbonContext.getThreadLocalCarbonContext().setTenantDomain(tenantDomain);
-                            PrivilegedCarbonContext.getThreadLocalCarbonContext().setTenantId(tenantId);
-                        }
+                        setTenantDetails(tenantId, tenantDomain);
                         // need to populate current carbon context from the one created at authentication
                         populateCurrentCarbonContextFromAuthSession(carbonContextHolder, currentSession);
-                        org.wso2.carbon.apimgt.api.model.APIIdentifier xsdAPIIdentifier =
-                                new org.wso2.carbon.apimgt.api.model.APIIdentifier(apiIdentifier.getProviderName(),
-                                        apiIdentifier.getApiName(), apiIdentifier.getVersion());
+                        org.wso2.carbon.apimgt.api.model.APIIdentifier xsdAPIIdentifier = new org.wso2.carbon.apimgt.api.model.APIIdentifier(
+                                apiIdentifier.getProviderName(), apiIdentifier.getApiName(),
+                                apiIdentifier.getVersion());
                         org.wso2.carbon.apimgt.impl.dto.CertificateTierDTO certificateTierInformation = apiKeyValidationService
                                 .getCertificateTierInformation(xsdAPIIdentifier, certificateIdentifier);
                         certificateTierDTO = new CertificateTierDTO();
@@ -434,5 +419,22 @@ public class APIKeyValidationServiceImpl extends AbstractAdmin
                     errorMessage + ": " + e.getMessage());
         }
         return certificateTierDTO;
+    }
+
+    /**
+     * To set tenant details in PrivilegedCarbonContext.
+     *
+     * @param tenantId     ID of the tenant.
+     * @param tenantDomain Domain of the tenant.
+     */
+    private void setTenantDetails(int tenantId, String tenantDomain) {
+        if (tenantDomain == null) {
+            PrivilegedCarbonContext.getThreadLocalCarbonContext()
+                    .setTenantDomain(MultitenantConstants.SUPER_TENANT_DOMAIN_NAME, true);
+            PrivilegedCarbonContext.getThreadLocalCarbonContext().setTenantId(MultitenantConstants.SUPER_TENANT_ID);
+        } else {
+            PrivilegedCarbonContext.getThreadLocalCarbonContext().setTenantDomain(tenantDomain);
+            PrivilegedCarbonContext.getThreadLocalCarbonContext().setTenantId(tenantId);
+        }
     }
 }

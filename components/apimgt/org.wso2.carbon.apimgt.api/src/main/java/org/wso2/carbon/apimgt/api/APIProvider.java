@@ -958,17 +958,6 @@ public interface APIProvider extends APIManager {
     List<CertificateMetadataDTO> getCertificates(String userName) throws APIManagementException;
 
     /**
-     * Method to get the client certificates uploaded for the given API.
-     *
-     * @param userName      Current authenticated user name.
-     * @param apiIdentifier Identifier of the API.
-     * @return List of client certificates specific to the current update.
-     * @throws APIManagementException API Management Exception.
-     */
-    List<ClientCertificateDTO> getClientCertificates(String userName, APIIdentifier apiIdentifier) throws
-            APIManagementException;
-
-    /**
      * Method to search the certificate metadata database for the provided alias and endpoints.
      *
      * @param tenantId : The id of the tenant which the certificates are belongs to.
@@ -980,8 +969,17 @@ public interface APIProvider extends APIManager {
     List<CertificateMetadataDTO> searchCertificates(int tenantId, String alias, String endpoint) throws
             APIManagementException;
 
-    List<ClientCertificateDTO> searchClientCertificates(int tenantId, String alias, APIIdentifier apiIdentifier) throws
-            APIManagementException;
+    /**
+     * Method to search the client certificates for the provided tenant id, alias and
+     *
+     * @param tenantId      ID of the tenant.
+     * @param alias         Alias of the certificate.
+     * @param apiIdentifier Identifier of the API.
+     * @return list of client certificates that match search criteria.
+     * @throws APIManagementException API Management Exception.
+     */
+    List<ClientCertificateDTO> searchClientCertificates(int tenantId, String alias, APIIdentifier apiIdentifier)
+            throws APIManagementException;
 
     /**
      * Retrieve the total number of certificates which a specified tenant has.
@@ -991,7 +989,15 @@ public interface APIProvider extends APIManager {
      */
     int getCertificateCountPerTenant(int tenantId) throws APIManagementException;
 
+    /**
+     * Retrieve the total number client certificates which the specified tenant has.
+     *
+     * @param tenantId ID of the tenant.
+     * @return count of client certificates that exists for a particular tenant.
+     * @throws APIManagementException API Management Exception.
+     */
     int getClientCertificateCount(int tenantId) throws APIManagementException;
+
     /**
      * Method to check whether an certificate for the given alias is present in the trust store and the database.
      *
@@ -1031,8 +1037,20 @@ public interface APIProvider extends APIManager {
      */
     int updateCertificate(String certificateString, String alias) throws APIManagementException;
 
+    /**
+     * Method to update the existing client certificate.
+     *
+     * @param certificate   : Relevant certificate that need to be updated.
+     * @param alias         : Alias of the certificate.
+     * @param APIIdentifier API Identifier of the certificate.
+     * @param tier          : tier name
+     * @param tenantId      : Id of tenant.
+     * @return : Integer value which represents the client certificate update status.
+     * @throws APIManagementException API Management Exception.
+     */
     int updateClientCertificate(String certificate, String alias, APIIdentifier APIIdentifier, String tier,
             int tenantId) throws APIManagementException;
+
     /**
      * Retrieve the certificate which matches the given alias.
      *

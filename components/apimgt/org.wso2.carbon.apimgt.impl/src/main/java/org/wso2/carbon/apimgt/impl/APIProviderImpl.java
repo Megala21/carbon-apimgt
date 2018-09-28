@@ -81,7 +81,11 @@ import org.wso2.carbon.apimgt.impl.certificatemgt.ResponseCode;
 import org.wso2.carbon.apimgt.impl.clients.RegistryCacheInvalidationClient;
 import org.wso2.carbon.apimgt.impl.clients.TierCacheInvalidationClient;
 import org.wso2.carbon.apimgt.impl.dao.ApiMgtDAO;
-import org.wso2.carbon.apimgt.impl.dto.*;
+import org.wso2.carbon.apimgt.impl.dto.Environment;
+import org.wso2.carbon.apimgt.impl.dto.ThrottleProperties;
+import org.wso2.carbon.apimgt.impl.dto.TierPermissionDTO;
+import org.wso2.carbon.apimgt.impl.dto.WorkflowDTO;
+import org.wso2.carbon.apimgt.impl.dto.WorkflowProperties;
 import org.wso2.carbon.apimgt.impl.internal.ServiceReferenceHolder;
 import org.wso2.carbon.apimgt.impl.notification.NotificationDTO;
 import org.wso2.carbon.apimgt.impl.notification.NotificationExecutor;
@@ -5285,20 +5289,6 @@ class APIProviderImpl extends AbstractAPIManager implements APIProvider {
     }
 
     @Override
-    public List<ClientCertificateDTO> getClientCertificates(String userName, APIIdentifier apiIdentifier) throws
-            APIManagementException {
-        int tenantId = -1;
-        try {
-            tenantId = ServiceReferenceHolder.getInstance().getRealmService().getTenantManager()
-                    .getTenantId(tenantDomain);
-
-        } catch (UserStoreException e) {
-            handleException("Error while reading tenant information", e);
-        }
-        return CertificateManagerFactory.getCertificateManagerInstance().getClientCertificates(apiIdentifier, tenantId);
-    }
-
-    @Override
     public List<CertificateMetadataDTO> searchCertificates(int tenantId, String alias, String endpoint) throws
             APIManagementException {
 
@@ -5306,10 +5296,10 @@ class APIProviderImpl extends AbstractAPIManager implements APIProvider {
         return certificateManager.getCertificates(tenantId, alias, endpoint);
     }
 
-    public List<ClientCertificateDTO> searchClientCertificates(int tenantId, String alias,
-            APIIdentifier apiIdentifier) throws APIManagementException {
+    public List<ClientCertificateDTO> searchClientCertificates(int tenantId, String alias, APIIdentifier apiIdentifier)
+            throws APIManagementException {
         return CertificateManagerFactory.getCertificateManagerInstance()
-                .getClientCertificates(tenantId, alias, apiIdentifier);
+                .searchClientCertificates(tenantId, alias, apiIdentifier);
     }
 
     @Override
@@ -5322,7 +5312,12 @@ class APIProviderImpl extends AbstractAPIManager implements APIProvider {
     @Override
     public ClientCertificateDTO getClientCertificate(int tenantId, String alias) throws APIManagementException {
         CertificateManager certificateManager = CertificateManagerFactory.getCertificateManagerInstance();
-        return certificateManager.getClientCertificate(tenantId, alias);
+        List<ClientCertificateDTO> clientCertificateDTOS = certificateManager.searchClientCertificates(tenantId, alias,
+                null);
+        if (clientCertificateDTOS != null && clientCertificateDTOS.size() > 0){
+            return clientCertificateDTOS.get(0);
+        }
+        return null;
     }
 
     @Override
@@ -5351,9 +5346,9 @@ class APIProviderImpl extends AbstractAPIManager implements APIProvider {
     @Override
     public int updateClientCertificate(String certificate, String alias, APIIdentifier apiIdentifier,
             String tier, int tenantId) throws APIManagementException {
-
         CertificateManager certificateManager = CertificateManagerFactory.getCertificateManagerInstance();
-        ResponseCode responseCode = certificateManager.updateClientCertificate(certificate, alias, tier, tenantId);
+        ResponseCode responseCode = certificateManager
+                .updateClientCertificate(certificate, alias, tier, tenantId);
         return responseCode != null ?
                 responseCode.getResponseCode() :
                 ResponseCode.INTERNAL_SERVER_ERROR.getResponseCode();

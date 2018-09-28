@@ -64,7 +64,6 @@ public class APIConfigContext extends ConfigContext {
         } else {
             context.put("apiIsBlocked", Boolean.FALSE);
         }
-
         if (api.getApiSecurity().contains(APIConstants.DEFAULT_API_SECURITY_OAUTH2)) {
             context.put("apiIsOauthProtected", Boolean.TRUE);
         } else {

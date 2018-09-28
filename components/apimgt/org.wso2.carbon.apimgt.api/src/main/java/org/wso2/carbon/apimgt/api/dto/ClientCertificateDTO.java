@@ -82,19 +82,39 @@ public class ClientCertificateDTO {
     public void setTierName(String tierName) {
         this.tierName = tierName;
     }
-    
+
+    /**
+     * To get the alias of the certificate.
+     *
+     * @return alias of the certificate.
+     */
     public String getAlias() {
         return alias;
     }
 
+    /**
+     * To set the alias of the certificate.
+     *
+     * @param alias Specific alias.
+     */
     public void setAlias(String alias) {
         this.alias = alias;
     }
 
+    /**
+     * To get the certificate content.
+     *
+     * @return certificate content.
+     */
     public String getCertificate() {
         return certificate;
     }
 
+    /**
+     * To set the certificate content.
+     *
+     * @param certificate certificate content.
+     */
     public void setCertificate(String certificate) {
         this.certificate = certificate;
     }

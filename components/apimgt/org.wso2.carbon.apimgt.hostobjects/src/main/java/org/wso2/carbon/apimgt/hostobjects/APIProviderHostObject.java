@@ -5216,11 +5216,9 @@ public class APIProviderHostObject extends ScriptableObject {
     public static int jsFunction_uploadClientCertificate(Context cx, Scriptable thisObj, Object[] args, Function funObj)
             throws APIManagementException {
         if ((args == null) || (args.length != 7) || !isStringValues(args)) {
-            handleException(
-                    "Invalid number of arguments. Expect User Name, api name, version, provider, Alias, Endpoint "
-                            + "and Certificate String .");
+            handleException("Invalid number of arguments. Expect user Name, api name, version, provider, alias "
+                    + "certificate string and tier name.");
         }
-
         String userName = (String) args[0];
         String apiName = (String) args[1];
         String version = (String) args[2];
@@ -5267,14 +5265,14 @@ public class APIProviderHostObject extends ScriptableObject {
      * @param funObj  Function object
      * @return : True if deleting certificate is successful. False otherwise.
      */
-    public static int jsFunction_deleteClientCertificate(Context cx, Scriptable thisObj, Object[] args,
-            Function funObj) throws APIManagementException {
+    public static int jsFunction_deleteClientCertificate(Context cx, Scriptable thisObj, Object[] args, Function funObj)
+            throws APIManagementException {
         ResponseCode responseCode = ResponseCode.INTERNAL_SERVER_ERROR;
         CertificateManager certificateManager = new CertificateManagerImpl();
         if ((args == null) || (args.length != 5) || !isStringValues(args)) {
-            handleException("Invalid number of arguments. Expect User Name, Alias and Endpoint.");
+            handleException("Invalid number of arguments. Expected arguments username, alias, apiname, version and "
+                    + "provider.");
         }
-
         String userName = (String) args[0];
         String alias = (String) args[1];
         String apiName = (String) args[2];
@@ -5350,10 +5348,9 @@ public class APIProviderHostObject extends ScriptableObject {
         NativeObject certificateMetaData = new NativeObject();
         APIProvider apiProvider = getAPIProvider(thisObj);
         APIIdentifier apiIdentifier = new APIIdentifier(APIUtil.replaceEmailDomain(provider), apiName, apiVersion);
-        List<ClientCertificateDTO> clientCertificateDTOList = apiProvider
-                .getClientCertificates(userName, apiIdentifier);
         String tenantDomain = MultitenantUtils.getTenantDomain(userName);
-
+        List<ClientCertificateDTO> clientCertificateDTOList = apiProvider
+                .searchClientCertificates(APIUtil.getTenantIdFromTenantDomain(tenantDomain), null, apiIdentifier);
         int index = 0;
         if (clientCertificateDTOList != null) {
             for (ClientCertificateDTO clientCertificateDTO : clientCertificateDTOList) {

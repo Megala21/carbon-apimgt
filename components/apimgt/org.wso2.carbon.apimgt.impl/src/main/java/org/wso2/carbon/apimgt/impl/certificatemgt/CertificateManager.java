@@ -48,21 +48,6 @@ public interface CertificateManager {
     ResponseCode addCertificateToParentNode(String certificate, String alias, String endpoint, int tenantId);
 
     /**
-     * Method to add client certificate (i.e. Client certificate that can be used to connect the client with gateway)
-     * to publisher node.
-     *
-     * @param apiIdentifier : Identifier of the relevant API, which the client certificate is added against.
-     * @param certificate   : Base64 encoded certificate string.
-     * @param alias         : Alias of the certificate.
-     * @param tenantId      : The tenant which the client certificate is added against
-     * @return SUCCESS : If Operation succeeded, INTERNAL_SERVER_ERROR : If any internal error occurred,
-     * ALIAS_EXISTS_IN_TRUST_STORE : If the alias already present in the trust store,CERTIFICATE_EXPIRED : If the
-     * certificate is expired.
-     */
-    ResponseCode addClientCertificate(APIIdentifier apiIdentifier, String certificate, String alias, String tierName,
-            int tenantId);
-
-    /**
      * Method to delete certificate from publisher trust store.
      *
      * @param alias    : Alias of the certificate which needs to be removed.
@@ -75,18 +60,6 @@ public interface CertificateManager {
     ResponseCode deleteCertificateFromParentNode(String alias, String endpoint, int tenantId);
 
     /**
-     * Method to delete the client certificate from publisher node.
-     *
-     * @param apiIdentifier : Identifier of the API which particular client certificate is added against.
-     * @param alias         : Alias of the certificate which needs to be removed.
-     * @param tenantId      : The owner tenant id.
-     * @return : SUCCESS: If operation success
-     * INTERNAL_SERVER_ERROR: If any internal error occurred
-     * CERTIFICATE_NOT_FOUND : If Certificate is not found in the trust store.
-     */
-    ResponseCode deleteClientCertificateFromParentNode(APIIdentifier apiIdentifier, String alias, int tenantId);
-
-    /**
      * Method to add the certificate to gateway nodes.
      *
      * @param certificate : The Base64 encoded certificate string.
@@ -96,30 +69,12 @@ public interface CertificateManager {
     boolean addCertificateToGateway(String certificate, String alias);
 
     /**
-     * Method to add client certificate to gateway nodes.
-     *
-     * @param certificate : The Base64 encoded certificate string.
-     * @param alias       : Certificate alias.
-     * @return : True if the certificate is added to gateway node successfully. False otherwise.
-     */
-    boolean addClientCertificateToGateway(String certificate, String alias);
-
-
-    /**
      * This method is to remove the certificate from client-truststore.jks of gateway nodes.
      *
      * @param alias : The alias of the certificate to be removed.
      * @return : True if the certificate is removed successfully, false otherwise.
      */
     boolean deleteCertificateFromGateway(String alias);
-
-    /**
-     * This method is to remove the client certificate from client-truststore.jks of gateway nodes.
-     *
-     * @param alias : The alias of the certificate to be removed.
-     * @return : True if the certificate is removed successfully, false otherwise.
-     */
-    boolean deleteClientCertificateFromGateway(String alias);
 
     /**
      * This method is to check whether the API-Manager is configured for Certificate Management feature.
@@ -147,16 +102,6 @@ public interface CertificateManager {
     List<CertificateMetadataDTO> getCertificates(String endpoint, int tenantId);
 
     /**
-     * This method will return the Certificate Metadata object which maps to the api and belongs to the particular
-     * tenant.
-     *
-     * @param apiIdentifier : Identifier of the API
-     * @param tenantId      : The Id of the tenant that endpoint belongs to.
-     * @return CertificateMetadataDTO object which contains the certificate meta data.
-     */
-    List<ClientCertificateDTO> getClientCertificates(APIIdentifier apiIdentifier, int tenantId);
-
-    /**
      * This method is used to retrieve all the certificates which belong to the given tenant.
      *
      * @param tenantId : The id of the tenant which the certificates should be retrieved.
@@ -175,9 +120,6 @@ public interface CertificateManager {
      */
     List<CertificateMetadataDTO> getCertificates(int tenantId, String alias, String endpoint) throws APIManagementException;
 
-    List<ClientCertificateDTO> getClientCertificates(int tenantId, String alias,
-            APIIdentifier apiIdentifier) throws APIManagementException;
-
     /**
      * Check whether a certificate for the given alias is present in the database.
      *
@@ -186,8 +128,6 @@ public interface CertificateManager {
      * @return : True if the certificate is present. False otherwise.
      */
     boolean isCertificatePresent(int tenantId, String alias) throws APIManagementException;
-
-    ClientCertificateDTO getClientCertificate(int tenantId, String alias) throws APIManagementException;
 
     /**
      * Method to retrieve the properties (expiry date etc) of the certificate which matches the given alias.
@@ -207,24 +147,12 @@ public interface CertificateManager {
     ResponseCode updateCertificate(String certificate, String alias) throws APIManagementException;
 
     /**
-     * Method to update an existing client certificate.
-     *
-     * @param certificate : The base64 encoded certificate string.
-     * @param alias       : The alias of the certificate that should be updated.
-     * @param tenantId    : Id of the tenant.
-     * @return : true if update succeeds, false if fails
-     */
-    ResponseCode updateClientCertificate(String certificate, String alias, String tier, int tenantId) throws APIManagementException;
-
-    /**
      * Get the number of certificates which a tenant has uploaded.
      *
      * @param tenantId : The id of the tenant.
      * @return : The total count of certificates.
      */
     int getCertificateCount(int tenantId) throws APIManagementException;
-
-    int getClientCertificateCount(int tenantId) throws APIManagementException;
 
     /**
      * Get the certificate which matches the provided alias from the trust store.
@@ -233,4 +161,81 @@ public interface CertificateManager {
      * @return : The Certificate object.
      */
     ByteArrayInputStream getCertificateContent(String alias) throws APIManagementException;
+
+    /**
+     * Method to add client certificate (i.e. Client certificate that can be used to connect the client with gateway)
+     * to publisher node.
+     *
+     * @param apiIdentifier : Identifier of the relevant API, which the client certificate is added against.
+     * @param certificate   : Base64 encoded certificate string.
+     * @param alias         : Alias of the certificate.
+     * @param tenantId      : The tenant which the client certificate is added against
+     * @return SUCCESS : If Operation succeeded, INTERNAL_SERVER_ERROR : If any internal error occurred,
+     * ALIAS_EXISTS_IN_TRUST_STORE : If the alias already present in the trust store,CERTIFICATE_EXPIRED : If the
+     * certificate is expired.
+     */
+    ResponseCode addClientCertificate(APIIdentifier apiIdentifier, String certificate, String alias, String tierName,
+            int tenantId);
+
+    /**
+     * Method to delete the client certificate from publisher node.
+     *
+     * @param apiIdentifier : Identifier of the API which particular client certificate is added against.
+     * @param alias         : Alias of the certificate which needs to be removed.
+     * @param tenantId      : The owner tenant id.
+     * @return : SUCCESS: If operation success
+     * INTERNAL_SERVER_ERROR: If any internal error occurred
+     * CERTIFICATE_NOT_FOUND : If Certificate is not found in the trust store.
+     */
+    ResponseCode deleteClientCertificateFromParentNode(APIIdentifier apiIdentifier, String alias, int tenantId);
+
+    /**
+     * Method to add client certificate to gateway nodes.
+     *
+     * @param certificate : The Base64 encoded certificate string.
+     * @param alias       : Certificate alias.
+     * @return : True if the certificate is added to gateway node successfully. False otherwise.
+     */
+    boolean addClientCertificateToGateway(String certificate, String alias);
+
+    /**
+     * This method is to remove the client certificate from client-truststore.jks of gateway nodes.
+     *
+     * @param alias : The alias of the certificate to be removed.
+     * @return : True if the certificate is removed successfully, false otherwise.
+     */
+    boolean deleteClientCertificateFromGateway(String alias);
+
+    /**
+     * This method is used to search client certificates based on different parameters.
+     *
+     * @param tenantId      ID of the tenant.
+     * @param alias         Alias of the certificate.
+     * @param apiIdentifier Identifier of the API.
+     * @return List of certificates that match the criteria.
+     * @throws APIManagementException API Management Exception.
+     */
+    List<ClientCertificateDTO> searchClientCertificates(int tenantId, String alias, APIIdentifier apiIdentifier)
+            throws APIManagementException;
+
+    /**
+     * Method to update an existing client certificate.
+     *
+     * @param certificate : The base64 encoded certificate string.
+     * @param alias       : The alias of the certificate that should be updated.
+     * @param tenantId    : Id of the tenant.
+     * @param tier        : Name of the tier
+     * @return : true if update succeeds, false if fails
+     */
+    ResponseCode updateClientCertificate(String certificate, String alias, String tier, int tenantId)
+            throws APIManagementException;
+
+    /**
+     * To get the count of the client certificates updated for the particular tenant.
+     *
+     * @param tenantId ID of the tenant.
+     * @return count of client certificates.
+     * @throws APIManagementException API Management Exception.
+     */
+    int getClientCertificateCount(int tenantId) throws APIManagementException;
 }

@@ -105,7 +105,8 @@ public class WSAPIKeyDataStore implements APIKeyDataStore {
             }
         } catch (Exception exception) {
             if (log.isDebugEnabled()) {
-                log.debug("Releasing APIKeyValidator client from client pool caused an exception = " + exception.getMessage());
+                log.debug("Releasing APIKeyValidator client from client pool caused an exception = " + exception
+                        .getMessage());
             }
         }
     }

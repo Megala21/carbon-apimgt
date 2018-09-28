@@ -66,6 +66,13 @@ public class CertificateRestApiUtils {
         return new String(encodedCert, StandardCharset.UTF_8);
     }
 
+    /**
+     * To get the decoded certificate input stream.
+     *
+     * @param certificate Relevant encoded certificate
+     * @return Input stream of the certificate.
+     * @throws APIManagementException API Management Exception.
+     */
     public static ByteArrayInputStream getDecodedCertificate(String certificate) throws APIManagementException {
         byte[] cert = (Base64.decodeBase64(certificate.getBytes(StandardCharsets.UTF_8)));
         ByteArrayInputStream serverCert = new ByteArrayInputStream(cert);
@@ -80,7 +87,6 @@ public class CertificateRestApiUtils {
             throw new APIManagementException("Error while decoding the certificate", e);
         }
         return null;
-
     }
 
     /**
@@ -127,13 +133,14 @@ public class CertificateRestApiUtils {
         String paginatedNext = "";
 
         if (paginatedParams.get(RestApiConstants.PAGINATION_PREVIOUS_OFFSET) != null) {
-            paginatedPrevious = getCertificatesPaginatedURL(paginatedParams.get(
-                    RestApiConstants.PAGINATION_PREVIOUS_OFFSET), paginatedParams.get(
-                    RestApiConstants.PAGINATION_PREVIOUS_LIMIT), query);
+            paginatedPrevious = getCertificatesPaginatedURL(RestApiConstants.CERTS_GET_PAGINATED_URL,
+                    paginatedParams.get(RestApiConstants.PAGINATION_PREVIOUS_OFFSET),
+                    paginatedParams.get(RestApiConstants.PAGINATION_PREVIOUS_LIMIT), query);
         }
 
         if (paginatedParams.get(RestApiConstants.PAGINATION_NEXT_OFFSET) != null) {
-            paginatedNext = getCertificatesPaginatedURL(paginatedParams.get(RestApiConstants.PAGINATION_NEXT_OFFSET),
+            paginatedNext = getCertificatesPaginatedURL(RestApiConstants.CERTS_GET_PAGINATED_URL,
+                    paginatedParams.get(RestApiConstants.PAGINATION_NEXT_OFFSET),
                     paginatedParams.get(RestApiConstants.PAGINATION_NEXT_LIMIT), query);
         }
 
@@ -144,9 +151,17 @@ public class CertificateRestApiUtils {
         return certificatesDTO;
     }
 
+    /**
+     * To get the paginated list of client certificates.
+     *
+     * @param clientCertificateDTOList Client certificate list.
+     * @param limit                    Limit
+     * @param offset                   Offset
+     * @param query                    query
+     * @return paginated list of client certificates.
+     */
     public static ClientCertificatesDTO getPaginatedClientCertificates(
             List<ClientCertificateDTO> clientCertificateDTOList, int limit, int offset, String query) {
-
         if (log.isDebugEnabled()) {
             log.debug(String.format(
                     "Filter the client certificates based on the pagination parameters, limit = %d and" + "offset = %d",
@@ -155,7 +170,6 @@ public class CertificateRestApiUtils {
 
         int certCount = clientCertificateDTOList.size();
         List<ClientCertMetadataDTO> clientCertificateList = new ArrayList<>();
-
         ClientCertificatesDTO certificatesDTO = new ClientCertificatesDTO();
         certificatesDTO.setCount(certCount > limit ? limit : certCount);
 
@@ -175,23 +189,19 @@ public class CertificateRestApiUtils {
             clientCertMetadataDTO.setTier(clientCertificateDTO.getTierName());
             clientCertificateList.add(clientCertMetadataDTO);
         }
-
         Map<String, Integer> paginatedParams = RestApiUtil.getPaginationParams(offset, limit, certCount);
         String paginatedPrevious = "";
         String paginatedNext = "";
-
         if (paginatedParams.get(RestApiConstants.PAGINATION_PREVIOUS_OFFSET) != null) {
-            paginatedPrevious = getClientCertificatesPaginatedURL(
+            paginatedPrevious = getCertificatesPaginatedURL(RestApiConstants.CLIENT_CERTS_GET_PAGINATED_URL,
                     paginatedParams.get(RestApiConstants.PAGINATION_PREVIOUS_OFFSET),
                     paginatedParams.get(RestApiConstants.PAGINATION_PREVIOUS_LIMIT), query);
         }
-
         if (paginatedParams.get(RestApiConstants.PAGINATION_NEXT_OFFSET) != null) {
-            paginatedNext = getClientCertificatesPaginatedURL(
+            paginatedNext = getCertificatesPaginatedURL(RestApiConstants.CLIENT_CERTS_GET_PAGINATED_URL,
                     paginatedParams.get(RestApiConstants.PAGINATION_NEXT_OFFSET),
                     paginatedParams.get(RestApiConstants.PAGINATION_NEXT_LIMIT), query);
         }
-
         certificatesDTO.setNext(paginatedNext);
         certificatesDTO.setPrevious(paginatedPrevious);
         certificatesDTO.setCount(clientCertificateList.size());
@@ -205,28 +215,10 @@ public class CertificateRestApiUtils {
      * @param offset : The offset
      * @param limit  : The limit parameter.
      * @param query  : The provided query string
-     * @return :
+     * @return : Certificates paginated URL
      */
-    private static String getCertificatesPaginatedURL(Integer offset, Integer limit, String query) {
-
-        String paginatedURL = RestApiConstants.CERTS_GET_PAGINATED_URL;
-        paginatedURL = paginatedURL.replace(RestApiConstants.LIMIT_PARAM, String.valueOf(limit));
-        paginatedURL = paginatedURL.replace(RestApiConstants.OFFSET_PARAM, String.valueOf(offset));
-        paginatedURL = paginatedURL.replace(RestApiConstants.QUERY_PARAM, query);
-        return paginatedURL;
-    }
-
-    /**
-     * Get the paginated certificate urls.
-     *
-     * @param offset : The offset
-     * @param limit  : The limit parameter.
-     * @param query  : The provided query string
-     * @return :
-     */
-    private static String getClientCertificatesPaginatedURL(Integer offset, Integer limit, String query) {
-
-        String paginatedURL = RestApiConstants.CLIENT_CERTS_GET_PAGINATED_URL;
+    private static String getCertificatesPaginatedURL(String paginatedURL, Integer offset, Integer limit,
+            String query) {
         paginatedURL = paginatedURL.replace(RestApiConstants.LIMIT_PARAM, String.valueOf(limit));
         paginatedURL = paginatedURL.replace(RestApiConstants.OFFSET_PARAM, String.valueOf(offset));
         paginatedURL = paginatedURL.replace(RestApiConstants.QUERY_PARAM, query);

@@ -558,10 +558,10 @@ public class APIGatewayAdmin extends org.wso2.carbon.core.AbstractAdmin {
      * Imports the given certificate to the trust store.
      *
      * @param certificate : The client certificate that needs to be added.
-     * @param alias : The alias for the certificate.
-     * */
+     * @param alias       : The alias for the certificate.
+     */
     public boolean addClientCertificate(String certificate, String alias) {
-        CertificateManager certificateManager = new CertificateManagerImpl();
+        CertificateManager certificateManager = CertificateManagerFactory.getCertificateManagerInstance();
         int tenantId = PrivilegedCarbonContext.getThreadLocalCarbonContext().getTenantId();
         if (!alias.endsWith("_" + tenantId)) {
             alias = "_" + tenantId;
@@ -583,14 +583,13 @@ public class APIGatewayAdmin extends org.wso2.carbon.core.AbstractAdmin {
      * Removes the certificate for the given alias from the trust store.
      *
      * @param alias : Alias of the certificate that needs to be removed.
-     * */
+     */
     public boolean deleteClientCertificate(String alias) {
         int tenantId = PrivilegedCarbonContext.getThreadLocalCarbonContext().getTenantId();
-        if (alias.endsWith("_" + tenantId)) {
-            CertificateManager certificateManager = CertificateManagerFactory.getCertificateManagerInstance();
-            return certificateManager.deleteClientCertificateFromGateway(alias);
+        if (!alias.endsWith("_" + tenantId)) {
+            alias = "_" + tenantId;
         }
-        log.warn("Attempt made to delete an alias " + alias + " from different tenant has been failed.");
-        return false;
+        CertificateManager certificateManager = CertificateManagerFactory.getCertificateManagerInstance();
+        return certificateManager.deleteClientCertificateFromGateway(alias);
     }
 }
